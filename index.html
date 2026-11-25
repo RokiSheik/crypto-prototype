@@ -1,0 +1,2923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CryptoPro Institutional - Bitcoin Investment & Trading Terminal (Prototype)</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              gold: '#f5b82e',
+              goldHover: '#e0a41d',
+              goldGlow: 'rgba(245, 184, 46, 0.25)',
+              dark: '#080b11',
+              card: '#0f1422',
+              cardBorder: '#1c2438',
+              surface: '#141b2d',
+              surfaceHover: '#1c253d',
+              emerald: '#10b981',
+              ruby: '#ef4444'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- TradingView Lightweight Charts -->
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: #06080d;
+      color: #e2e8f0;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #080b11;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1f2a40;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #f5b82e;
+    }
+
+    /* Glass & Card Glow Effects */
+    .crypto-card {
+      background: linear-gradient(180deg, rgba(17, 24, 39, 0.94) 0%, rgba(11, 16, 27, 0.98) 100%);
+      border: 1px solid rgba(37, 49, 74, 0.85);
+      border-radius: 14px;
+      transition: all 0.2s ease-in-out;
+    }
+
+    .crypto-card-gold {
+      background: linear-gradient(180deg, rgba(24, 30, 46, 0.95) 0%, rgba(14, 18, 30, 0.98) 100%);
+      border: 1px solid rgba(245, 184, 46, 0.35);
+      box-shadow: 0 4px 20px -2px rgba(245, 184, 46, 0.08);
+      border-radius: 14px;
+    }
+
+    .crypto-card-gold:hover {
+      border-color: rgba(245, 184, 46, 0.6);
+      box-shadow: 0 6px 24px -2px rgba(245, 184, 46, 0.16);
+    }
+
+    /* Pulse Glow */
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .pulse-dot {
+      animation: pulseGlow 1.8s infinite ease-in-out;
+    }
+
+    /* Slide Up Animation */
+    @keyframes slideUpFade {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn {
+      animation: slideUpFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Mobile Container Frame when Mobile Mode is Activated */
+    .mobile-frame {
+      max-width: 440px !important;
+      margin: 0 auto;
+      border: 1px solid rgba(245, 184, 46, 0.35);
+      border-radius: 36px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px rgba(245, 184, 46, 0.12);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .mobile-notch {
+      display: none;
+    }
+    .mobile-frame .mobile-notch {
+      display: flex;
+    }
+
+    /* Active Nav Tab Glow */
+    .nav-btn.active {
+      color: #f5b82e;
+      background: rgba(245, 184, 46, 0.12);
+      border-color: rgba(245, 184, 46, 0.4);
+    }
+
+    /* Tab Pill Active */
+    .sub-tab-btn.active {
+      background: #f5b82e;
+      color: #080b11;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(245, 184, 46, 0.35);
+    }
+  </style>
+</head>
+<body class="bg-[#06080d] text-slate-100 flex flex-col min-h-screen">
+
+  <!-- ==================== TOP GLOBAL TOOLBAR & CLIENT DEMO CONTROLS ==================== -->
+  <aside class="bg-[#0b0f19] border-b border-slate-800/80 px-3 py-2 text-xs flex flex-wrap items-center justify-between gap-2 sticky top-0 z-50">
+    <div class="flex items-center gap-2.5">
+      <!-- Live Status Pill -->
+      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/70 border border-emerald-500/40 text-emerald-400 font-semibold text-[11px]">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+        <span id="globalLiveLabel">BINANCE LIVE FEED</span>
+      </div>
+
+      <span class="text-slate-500 hidden sm:inline">|</span>
+
+      <!-- Client Demo Info Pill -->
+      <span class="text-slate-400 hidden md:inline text-[11px]">
+        <i class="fa-solid fa-sparkles text-brand-gold mr-1"></i> Interactive Prototype for Client Review
+      </span>
+    </div>
+
+    <!-- Quick Sandbox Controls (Client Simulation Tools) -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <!-- Viewport Toggle: Full Desktop Terminal vs Mobile Frame -->
+      <div class="flex items-center bg-[#131a29] p-0.5 rounded-lg border border-slate-700/60">
+        <button id="viewModeDesktopBtn" onclick="setViewMode('desktop')" class="px-2.5 py-1 rounded text-[11px] font-bold bg-brand-gold text-brand-dark transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-desktop"></i>
+          <span class="hidden sm:inline">Desktop</span>
+        </button>
+        <button id="viewModeMobileBtn" onclick="setViewMode('mobile')" class="px-2.5 py-1 rounded text-[11px] font-semibold text-slate-300 hover:text-white transition flex items-center gap-1.5">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+          <span class="hidden sm:inline">Mobile App</span>
+        </button>
+      </div>
+
+      <!-- Quick Sim Market Shock: Pump (+5%) & Dump (-5%) -->
+      <div class="hidden lg:flex items-center gap-1">
+        <button onclick="simulateMarketMove(0.05)" title="Simulate +5% Bitcoin Price Surge" class="px-2 py-1 rounded-md bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 hover:bg-emerald-900 text-[11px] font-bold flex items-center gap-1 transition">
+          <i class="fa-solid fa-arrow-trend-up"></i> +5% Pump
+        </button>
+        <button onclick="simulateMarketMove(-0.05)" title="Simulate -5% Bitcoin Price Drop" class="px-2 py-1 rounded-md bg-rose-950/90 border border-rose-500/50 text-rose-300 hover:bg-rose-900 text-[11px] font-bold flex items-center gap-1 transition">
+          <i class="fa-solid fa-arrow-trend-down"></i> -5% Drop
+        </button>
+      </div>
+
+      <!-- Demo Balance Badge (Clickable to Add Cash) -->
+      <button onclick="openModal('walletModal')" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-surface border border-brand-gold/40 text-brand-gold font-bold text-xs hover:border-brand-gold transition shadow-sm">
+        <i class="fa-solid fa-wallet text-[11px]"></i>
+        <span class="hidden sm:inline font-normal text-slate-300">Demo Cash:</span>
+        <span id="topBarDemoCash">$10,000.00</span>
+      </button>
+
+      <!-- Reset Demo State Button -->
+      <button onclick="resetDemoState()" title="Reset Demo Data" class="w-7 h-7 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-brand-gold border border-slate-700 flex items-center justify-center text-xs transition">
+        <i class="fa-solid fa-rotate-right"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==================== APP CONTAINER (DESKTOP EXPANDED OR MOBILE FRAME) ==================== -->
+  <div id="appContainer" class="w-full flex-1 flex flex-col transition-all duration-300 pb-16 md:pb-0">
+
+    <!-- Mobile Screen Notch (Only shown in mobile frame mode) -->
+    <div class="mobile-notch w-full bg-[#080b11] px-6 pt-2 pb-1 justify-between items-center text-slate-400 text-[11px] select-none border-b border-slate-800/40">
+      <span class="font-bold text-slate-200" id="mobileClock">9:41</span>
+      <div class="w-24 h-4 bg-slate-900 rounded-full mx-auto border border-slate-800"></div>
+      <div class="flex items-center gap-1.5 text-[10px]">
+        <i class="fa-solid fa-signal"></i>
+        <i class="fa-solid fa-wifi"></i>
+        <i class="fa-solid fa-battery-full text-emerald-400"></i>
+      </div>
+    </div>
+
+    <!-- ==================== MAIN HEADER / BRAND BAR ==================== -->
+    <header class="px-4 py-3 bg-[#0d121e]/95 backdrop-blur-md border-b border-slate-800/90 flex items-center justify-between gap-3 sticky top-9 z-40">
+      <!-- Left: Logo & Title -->
+      <div class="flex items-center gap-3 cursor-pointer" onclick="switchMainTab('trade')">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 via-amber-500 to-yellow-400 flex items-center justify-center shadow-[0_0_20px_rgba(245,184,46,0.45)] border border-yellow-200/40 shrink-0">
+          <span class="text-white font-extrabold text-2xl leading-none" style="transform: rotate(-8deg);">₿</span>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-white leading-none">
+              Crypto<span class="text-brand-gold">Pro</span>
+            </h1>
+            <span class="px-1.5 py-0.5 rounded bg-brand-gold/15 border border-brand-gold/30 text-[9px] font-bold text-brand-gold tracking-wider uppercase">INSTITUTIONAL</span>
+          </div>
+          <p class="text-[11px] text-slate-400 font-medium mt-0.5 leading-none">Next-Gen Crypto Investment & Trading Terminal</p>
+        </div>
+      </div>
+
+      <!-- Center: Desktop Navigation Bar -->
+      <nav class="hidden md:flex items-center gap-1 bg-[#121826] p-1 rounded-xl border border-slate-800">
+        <button onclick="switchMainTab('trade')" data-tab="trade" class="nav-tab-link px-3 py-1.5 rounded-lg text-xs font-semibold text-brand-gold bg-brand-gold/15 border border-brand-gold/30 flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-chart-line"></i> Trade
+        </button>
+        <button onclick="switchMainTab('markets')" data-tab="markets" class="nav-tab-link px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-table-cells"></i> Markets
+        </button>
+        <button onclick="switchMainTab('portfolio')" data-tab="portfolio" class="nav-tab-link px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-chart-pie"></i> Portfolio
+        </button>
+        <button onclick="switchMainTab('earn')" data-tab="earn" class="nav-tab-link px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-gem text-amber-400"></i> Staking & Earn
+        </button>
+        <button onclick="switchMainTab('orders')" data-tab="orders" class="nav-tab-link px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-clock-rotate-left"></i> History
+        </button>
+        <button onclick="switchMainTab('alerts')" data-tab="alerts" class="nav-tab-link relative px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-bell"></i> Alerts
+          <span id="navAlertBadgeDesk" class="w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] font-bold flex items-center justify-center leading-none">3</span>
+        </button>
+      </nav>
+
+      <!-- Right: User Account & Notifications -->
+      <div class="flex items-center gap-2">
+        <!-- Quick Deposit CTA Button -->
+        <button onclick="openModal('depositModal')" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-950 transition active:scale-95">
+          <i class="fa-solid fa-plus-circle"></i>
+          <span>Deposit</span>
+        </button>
+
+        <!-- Notification Bell Icon -->
+        <button onclick="openModal('notificationsModal')" class="relative w-9 h-9 rounded-xl bg-[#141b2c] border border-slate-700/80 hover:border-brand-gold/60 text-slate-300 hover:text-white flex items-center justify-center transition active:scale-95">
+          <i class="fa-solid fa-bell text-sm"></i>
+          <span id="headerBellCount" class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] font-bold flex items-center justify-center">3</span>
+        </button>
+
+        <!-- Profile Dropdown Pill -->
+        <button onclick="openModal('profileModal')" class="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-xl bg-[#141b2c] border border-slate-700/80 hover:border-brand-gold/60 transition active:scale-95">
+          <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 text-white font-bold flex items-center justify-center text-xs shadow-inner">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <div class="text-left hidden sm:block">
+            <p class="text-[11px] font-bold text-slate-100 leading-tight">Sagar Islamic Light</p>
+            <p class="text-[9.5px] font-semibold text-emerald-400 leading-tight">VIP Tier 2 • Verified</p>
+          </div>
+          <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 ml-0.5"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- ==================== REAL-TIME TOP TICKER MARQUEE BAR ==================== -->
+    <div class="bg-[#090d15] border-b border-slate-800/80 px-3 py-1.5 overflow-x-auto text-xs flex items-center gap-4 scrollbar-none select-none" id="topTickerRow">
+      <!-- Dynamically filled with coin prices and 24h deltas -->
+    </div>
+
+    <!-- ==================== MAIN CONTENT VIEWPORT ==================== -->
+    <main class="flex-1 p-3 sm:p-4 max-w-7xl w-full mx-auto space-y-4">
+
+      <!-- ========================================================================= -->
+      <!-- VIEW 1: TRADE TERMINAL & INVESTMENT DASHBOARD (HOME) -->
+      <!-- ========================================================================= -->
+      <section id="view-trade" class="main-view space-y-4 animate-fadeIn">
+        
+        <!-- Top Summary Metrics Row (3 High-Impact Cards) -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+          <!-- Card 1: Selected Coin Live Price & 24h High/Low -->
+          <div class="md:col-span-4 crypto-card-gold p-3.5 flex flex-col justify-between relative overflow-hidden">
+            <div class="flex items-start justify-between">
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+                  <span class="text-xs text-slate-400 font-semibold" id="cardActiveCoinName">Bitcoin (BTC / USD)</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mt-1" id="cardActiveCoinPrice">$92,645.30</h2>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold text-xs flex items-center gap-1" id="cardActiveCoinChange">
+                    <i class="fa-solid fa-caret-up"></i> +2.35%
+                  </span>
+                  <span class="text-xs text-slate-400" id="cardActiveCoinDollarChange">+$2,126.40 (24h)</span>
+                </div>
+              </div>
+
+              <!-- Animated Crypto Badge Icon -->
+              <div class="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-400/40 flex items-center justify-center text-brand-gold text-2xl shadow-lg shrink-0" id="cardActiveCoinBadge">
+                ₿
+              </div>
+            </div>
+
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 grid grid-cols-3 text-[11px]">
+              <div>
+                <span class="text-slate-500 block">24h High</span>
+                <span class="text-slate-200 font-semibold" id="stat24hHigh">$93,478.90</span>
+              </div>
+              <div>
+                <span class="text-slate-500 block">24h Low</span>
+                <span class="text-slate-200 font-semibold" id="stat24hLow">$89,752.10</span>
+              </div>
+              <div class="text-right">
+                <span class="text-slate-500 block">24h Volume</span>
+                <span class="text-slate-200 font-semibold" id="stat24hVol">$48.25B</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Your Portfolio Value & Bitcoin Holdings -->
+          <div class="md:col-span-5 crypto-card p-3.5 flex flex-col justify-between">
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-xs text-slate-400 font-semibold flex items-center gap-1">
+                  <i class="fa-solid fa-vault text-brand-gold"></i> Your Total Holdings Value
+                </span>
+                <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight mt-1" id="cardPortfolioValue">$15,352.18</h3>
+                <p class="text-xs text-slate-400 mt-1 flex items-center gap-2">
+                  <span>Demo Cash: <strong class="text-emerald-400" id="cardCashBal">$10,000.00</strong></span>
+                  <span>•</span>
+                  <span>Crypto: <strong class="text-brand-gold" id="cardBtcBal">0.057842 BTC</strong></span>
+                </p>
+              </div>
+
+              <button onclick="openModal('walletModal')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-semibold border border-slate-700 transition">
+                Manage
+              </button>
+            </div>
+
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-1.5">
+                <span class="text-slate-400">Net Profit / Loss:</span>
+                <span class="font-bold text-emerald-400" id="cardUnrealizedPnl">+$502.18 (+10.35%)</span>
+              </div>
+              <span class="text-[11px] text-slate-500">Fee basis: 0.10%</span>
+            </div>
+          </div>
+
+          <!-- Card 3: Risk Protection System (+5% Max Profit / -10% Stop Loss) -->
+          <div class="md:col-span-3 crypto-card p-3.5 flex flex-col justify-between border-amber-500/30">
+            <div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-brand-gold uppercase tracking-wider flex items-center gap-1">
+                  <i class="fa-solid fa-shield-halved"></i> Trade Guard
+                </span>
+                <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">ACTIVE</span>
+              </div>
+              <p class="text-[11px] text-slate-300 mt-1 leading-snug">
+                Automatic protection rules enforced on every client demo order:
+              </p>
+              <div class="mt-2 space-y-1 text-xs">
+                <div class="flex justify-between items-center text-emerald-400 font-semibold">
+                  <span><i class="fa-solid fa-circle-check mr-1 text-[10px]"></i>Max Profit Cap:</span>
+                  <span class="font-mono font-bold">+5.00%</span>
+                </div>
+                <div class="flex justify-between items-center text-rose-400 font-semibold">
+                  <span><i class="fa-solid fa-shield-exclamation mr-1 text-[10px]"></i>Max Stop Loss:</span>
+                  <span class="font-mono font-bold">-10.00%</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-2 pt-2 border-t border-slate-800 flex justify-between items-center">
+              <span class="text-[10px] text-slate-500">Auto-liquidates on cap</span>
+              <button onclick="openModal('alertSettingModal')" class="text-[11px] font-bold text-brand-gold hover:underline">
+                Configure
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Trading Terminal: Chart & Order Book (Left 8 cols) + Buy/Sell Calculator (Right 4 cols) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          
+          <!-- LEFT COLUMN: Chart + Timeframes + Order Book (col-span-8) -->
+          <div class="lg:col-span-8 space-y-4">
+            
+            <!-- TradingView Lightweight Chart Container -->
+            <div class="crypto-card p-3.5 space-y-2.5">
+              
+              <!-- Chart Controls Bar -->
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+                <!-- Timeframes (15m, 1H, 1D, 1W, 1M, ALL) -->
+                <div class="flex items-center gap-1" id="chartTimeframeGroup">
+                  <button onclick="changeTimeframe('15m', this)" class="tf-btn px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white transition">15m</button>
+                  <button onclick="changeTimeframe('1H', this)" class="tf-btn px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white transition">1H</button>
+                  <button onclick="changeTimeframe('1D', this)" class="tf-btn px-2.5 py-1 rounded-md text-xs font-bold bg-brand-gold text-brand-dark shadow transition">1D</button>
+                  <button onclick="changeTimeframe('1W', this)" class="tf-btn px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white transition">1W</button>
+                  <button onclick="changeTimeframe('1M', this)" class="tf-btn px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white transition">1M</button>
+                  <button onclick="changeTimeframe('ALL', this)" class="tf-btn px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white transition">ALL</button>
+                </div>
+
+                <!-- Chart Type: Area / Candlestick + Fullscreen -->
+                <div class="flex items-center gap-2">
+                  <div class="flex items-center bg-[#101625] p-0.5 rounded-lg border border-slate-700/60">
+                    <button id="chartModeAreaBtn" onclick="setChartType('area')" class="px-2.5 py-1 rounded text-xs font-bold bg-brand-gold text-brand-dark transition flex items-center gap-1">
+                      <i class="fa-solid fa-chart-area"></i> Area
+                    </button>
+                    <button id="chartModeCandleBtn" onclick="setChartType('candle')" class="px-2.5 py-1 rounded text-xs font-semibold text-slate-300 hover:text-white transition flex items-center gap-1">
+                      <i class="fa-solid fa-chart-column"></i> Candles
+                    </button>
+                  </div>
+
+                  <button onclick="toggleChartFullscreen()" title="Toggle Expand" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 flex items-center justify-center text-xs transition">
+                    <i class="fa-solid fa-expand"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- OHLC Live Stats Bar -->
+              <div class="flex flex-wrap items-center justify-between text-xs text-slate-400 font-mono pt-1">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-slate-200" id="chartCoinHeader">BTC/USDT</span>
+                  <span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-sans font-bold">REAL-TIME</span>
+                </div>
+                <div class="flex items-center gap-3 text-[11px]">
+                  <span>O: <strong class="text-slate-100" id="ohlcOpen">--</strong></span>
+                  <span>H: <strong class="text-emerald-400" id="ohlcHigh">--</strong></span>
+                  <span>L: <strong class="text-rose-400" id="ohlcLow">--</strong></span>
+                  <span>C: <strong class="text-brand-gold" id="ohlcClose">--</strong></span>
+                </div>
+              </div>
+
+              <!-- Chart Visual Area -->
+              <div id="chartContainer" class="w-full h-[280px] sm:h-[340px] rounded-xl overflow-hidden bg-[#090d16] border border-slate-800/80 relative transition-all duration-300">
+                <div id="tvChart" class="w-full h-full"></div>
+                <canvas id="fallbackCanvas" class="hidden w-full h-full block"></canvas>
+              </div>
+            </div>
+
+            <!-- Coin Selector Quick Carousel (Horizontal Pill Cards) -->
+            <div class="crypto-card p-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">Fast Asset Switcher</span>
+                <span class="text-[11px] text-slate-500">Click any asset to load instant chart & order form</span>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2" id="coinSelectorGrid">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+
+            <!-- Live Order Book & Recent Market Trades (Institutional Look) -->
+            <div class="crypto-card p-3.5 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Order Book -->
+              <div>
+                <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-800">
+                  <div class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-layer-group text-brand-gold text-xs"></i>
+                    <h4 class="text-xs font-bold text-slate-200">Live Order Book</h4>
+                  </div>
+                  <span class="text-[10px] text-slate-500 font-mono">Spread: $1.20</span>
+                </div>
+
+                <div class="text-[11px] font-mono">
+                  <div class="grid grid-cols-3 text-slate-500 text-[10px] pb-1 border-b border-slate-800/50">
+                    <span>Price (USD)</span>
+                    <span class="text-center">Size</span>
+                    <span class="text-right">Total ($)</span>
+                  </div>
+                  <!-- Asks (Red) -->
+                  <div id="orderBookAsks" class="space-y-0.5 py-1"></div>
+                  <!-- Mid Price Marker -->
+                  <div class="py-1.5 px-2 my-1 rounded bg-[#101726] border border-slate-800 flex items-center justify-between text-xs font-bold">
+                    <span class="text-emerald-400 flex items-center gap-1" id="orderBookMidPrice">$92,645.30 <i class="fa-solid fa-arrow-up text-[10px]"></i></span>
+                    <span class="text-[10px] text-slate-400">Market Rate</span>
+                  </div>
+                  <!-- Bids (Green) -->
+                  <div id="orderBookBids" class="space-y-0.5 py-1"></div>
+                </div>
+              </div>
+
+              <!-- Recent Market Trades -->
+              <div>
+                <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-800">
+                  <div class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-bolt text-brand-gold text-xs"></i>
+                    <h4 class="text-xs font-bold text-slate-200">Recent Market Trades</h4>
+                  </div>
+                  <span class="text-[10px] text-emerald-400 font-semibold pulse-dot"><i class="fa-solid fa-circle text-[6px] mr-1"></i>STREAM</span>
+                </div>
+
+                <div class="text-[11px] font-mono">
+                  <div class="grid grid-cols-4 text-slate-500 text-[10px] pb-1 border-b border-slate-800/50">
+                    <span>Price</span>
+                    <span class="text-center">Size</span>
+                    <span class="text-center">Time</span>
+                    <span class="text-right">Side</span>
+                  </div>
+                  <div id="recentMarketTradesList" class="space-y-1 py-1 max-h-[190px] overflow-hidden">
+                    <!-- Populated by JS -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Open Running Positions Monitor (+5% Max Profit / -10% Max Loss) -->
+            <div class="crypto-card-gold p-3.5 space-y-3" id="activeTradesContainer">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-brand-gold pulse-dot"></span>
+                  <h3 class="text-sm font-bold text-white">Running Trade Positions (<span id="activeTradesCount">0</span>)</h3>
+                </div>
+                <span class="text-[11px] text-slate-400">Enforcing +5% / -10% Cap</span>
+              </div>
+
+              <div id="activeTradesList" class="space-y-2.5">
+                <div class="text-center py-6 text-slate-400 text-xs">
+                  <i class="fa-solid fa-chart-line text-2xl text-slate-600 mb-2 block"></i>
+                  No active trade positions open. Place a Buy order to start live P&L tracking!
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- RIGHT COLUMN: Professional Buy / Sell Execution Terminal (col-span-4) -->
+          <div class="lg:col-span-4 space-y-4">
+            
+            <div class="crypto-card p-4 space-y-3.5 sticky top-24">
+              
+              <!-- Buy / Sell Mode Toggle Tabs -->
+              <div class="grid grid-cols-2 p-1 rounded-xl bg-[#0c101a] border border-slate-800">
+                <button id="orderSideBuyBtn" onclick="setOrderSide('BUY')" class="py-2 rounded-lg text-xs font-extrabold bg-emerald-600 text-white shadow-md shadow-emerald-950/60 transition flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-arrow-down-left"></i> Buy <span id="tradeSideCoinText">BTC</span>
+                </button>
+                <button id="orderSideSellBtn" onclick="setOrderSide('SELL')" class="py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-arrow-up-right"></i> Sell <span id="tradeSideCoinTextSell">BTC</span>
+                </button>
+              </div>
+
+              <!-- Order Subtype: Spot Market vs Fixed Term Staking Investment -->
+              <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center gap-1">
+                  <button id="orderTypeMarketBtn" onclick="setOrderType('MARKET')" class="sub-tab-btn active px-2.5 py-1 rounded-md text-[11px] transition">Market Execution</button>
+                  <button id="orderTypePlanBtn" onclick="setOrderType('STAKING')" class="sub-tab-btn px-2.5 py-1 rounded-md text-[11px] text-slate-400 hover:text-white transition">Yield Plan</button>
+                </div>
+                <span class="text-[11px] text-slate-400">Fee: <strong class="text-slate-200">0.10%</strong></span>
+              </div>
+
+              <!-- Buy/Sell Input Block -->
+              <div class="space-y-2">
+                <div class="flex justify-between items-center text-xs">
+                  <label class="text-slate-300 font-semibold" id="inputAmountLabel">Order Amount (USD)</label>
+                  <span class="text-slate-400 text-[11px]">Available: <strong class="text-emerald-400 font-mono" id="tradeAvailableCash">$10,000.00</strong></span>
+                </div>
+
+                <div class="relative flex items-center bg-[#090d16] border border-slate-700/80 rounded-xl overflow-hidden focus-within:border-brand-gold transition shadow-inner">
+                  <span class="px-3 text-slate-400 font-bold font-mono text-sm border-r border-slate-800" id="inputCurrencyPrefix">$</span>
+                  <input type="number" id="tradeAmountInput" value="100" min="1" step="any" oninput="calculateTradeTotals()" class="w-full px-3 py-2.5 bg-transparent font-extrabold text-base text-white focus:outline-none font-mono" />
+                  <span class="pr-3 text-xs font-semibold text-slate-400" id="inputCurrencySuffix">USD</span>
+                </div>
+
+                <!-- Quick Percentage Buttons (25%, 50%, 75%, 100%) -->
+                <div class="grid grid-cols-4 gap-1.5 pt-1">
+                  <button type="button" onclick="setAmountPercentage(0.25)" class="py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-bold text-[10.5px] border border-slate-700/60 transition">25%</button>
+                  <button type="button" onclick="setAmountPercentage(0.50)" class="py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-bold text-[10.5px] border border-slate-700/60 transition">50%</button>
+                  <button type="button" onclick="setAmountPercentage(0.75)" class="py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-bold text-[10.5px] border border-slate-700/60 transition">75%</button>
+                  <button type="button" onclick="setAmountPercentage(1.00)" class="py-1 rounded-lg bg-brand-gold/20 hover:bg-brand-gold/30 text-brand-gold font-bold text-[10.5px] border border-brand-gold/40 transition">MAX</button>
+                </div>
+              </div>
+
+              <!-- Fixed Staking Duration (Only visible when Staking Plan is selected) -->
+              <div id="stakingDurationGroup" class="hidden space-y-1.5 p-2.5 rounded-xl bg-amber-950/20 border border-brand-gold/30 animate-fadeIn">
+                <div class="flex justify-between items-center text-xs">
+                  <span class="text-brand-gold font-bold flex items-center gap-1"><i class="fa-solid fa-clock"></i> Investment Lock Period</span>
+                  <span class="text-emerald-400 font-bold text-[11px]" id="stakingApyLabel">+6.5% APY</span>
+                </div>
+                <select id="stakingDurationSelect" onchange="calculateTradeTotals()" class="w-full bg-[#0d121e] border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-200 focus:outline-none">
+                  <option value="7" data-apy="4.2">7 Days (Flexible - 4.2% APY)</option>
+                  <option value="15" data-apy="5.5">15 Days (Short Term - 5.5% APY)</option>
+                  <option value="30" data-apy="6.5" selected>30 Days (Recommended - 6.5% APY)</option>
+                  <option value="60" data-apy="8.8">60 Days (High Growth - 8.8% APY)</option>
+                  <option value="90" data-apy="12.0">90 Days (VIP Diamond - 12.0% APY)</option>
+                </select>
+                <p class="text-[10px] text-slate-400">Principal 100% returned upon maturity + daily compound returns.</p>
+              </div>
+
+              <!-- Real-time Cost & Estimated Yield Breakdown -->
+              <div class="space-y-1.5 p-3 rounded-xl bg-[#090d15] border border-slate-800 text-xs">
+                <div class="flex justify-between items-center text-slate-400">
+                  <span>Current Price:</span>
+                  <strong class="text-white font-mono" id="breakdownCurrentPrice">$92,645.30</strong>
+                </div>
+                <div class="flex justify-between items-center text-slate-400">
+                  <span id="breakdownReceiveLabel">You Will Get:</span>
+                  <strong class="text-emerald-400 font-mono font-bold" id="breakdownEstReceive">0.001079 BTC</strong>
+                </div>
+                <div class="flex justify-between items-center text-slate-400">
+                  <span>Trading Service Fee (0.10%):</span>
+                  <span class="text-slate-300 font-mono" id="breakdownFee">$0.10</span>
+                </div>
+                <div class="pt-2 border-t border-slate-800 flex justify-between items-center">
+                  <span class="font-bold text-slate-200">Total Settlement:</span>
+                  <span class="text-base font-extrabold text-brand-gold font-mono" id="breakdownTotalCost">$100.10</span>
+                </div>
+              </div>
+
+              <!-- Risk Safety Indicators Preview -->
+              <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-[11px] space-y-1">
+                <div class="flex justify-between items-center">
+                  <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-arrow-up mr-1 text-[9px]"></i>Take Profit Cap (+5%):</span>
+                  <strong class="text-slate-100 font-mono" id="previewTakeProfit">+$5.00</strong>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-rose-400 font-semibold"><i class="fa-solid fa-arrow-down mr-1 text-[9px]"></i>Stop Loss Cap (-10%):</span>
+                  <strong class="text-slate-100 font-mono" id="previewStopLoss">-$10.00</strong>
+                </div>
+              </div>
+
+              <!-- Main Execution Action Button -->
+              <button id="mainExecuteOrderBtn" type="button" onclick="executeCurrentOrder()" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-extrabold text-sm shadow-lg shadow-emerald-950/60 flex items-center justify-center gap-2 transition">
+                <i class="fa-solid fa-check-circle"></i>
+                <span id="executeOrderBtnText">Confirm Buy Bitcoin</span>
+              </button>
+
+              <p class="text-[10px] text-center text-slate-500">
+                <i class="fa-solid fa-lock text-[9px] mr-1"></i> Instant demo execution • No real capital required
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- VIEW 2: MARKETS & SCREENER (RELATED PAGE) -->
+      <!-- ========================================================================= -->
+      <section id="view-markets" class="main-view hidden space-y-4 animate-fadeIn">
+        <div class="crypto-card p-4 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-chart-simple text-brand-gold"></i> Live Cryptocurrency Markets
+              </h2>
+              <p class="text-xs text-slate-400">Track 24-hour prices, market caps, trading volume and 7-day sparkline trends</p>
+            </div>
+            
+            <!-- Search & Filters -->
+            <div class="flex items-center gap-2">
+              <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                <input type="text" id="marketSearchInput" oninput="filterMarketsTable()" placeholder="Search coins (BTC, ETH...)" class="pl-8 pr-3 py-1.5 rounded-lg bg-[#0b0f19] border border-slate-700 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-gold w-48" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Market Category Chips -->
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs select-none">
+            <button onclick="setMarketCategory('ALL', this)" class="market-cat-chip px-3 py-1 rounded-full font-bold bg-brand-gold text-brand-dark">All Assets</button>
+            <button onclick="setMarketCategory('L1', this)" class="market-cat-chip px-3 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white">Layer 1</button>
+            <button onclick="setMarketCategory('DEFI', this)" class="market-cat-chip px-3 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white">DeFi</button>
+            <button onclick="setMarketCategory('AI', this)" class="market-cat-chip px-3 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white">AI & Big Data</button>
+            <button onclick="setMarketCategory('GAINERS', this)" class="market-cat-chip px-3 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white">Top Gainers</button>
+          </div>
+
+          <!-- Markets Table -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-slate-400 border-b border-slate-800 text-[11px] select-none font-semibold">
+                <tr>
+                  <th class="py-2.5 pl-2">Asset</th>
+                  <th class="py-2.5">Price</th>
+                  <th class="py-2.5">24h Change</th>
+                  <th class="py-2.5 hidden sm:table-cell">24h High / Low</th>
+                  <th class="py-2.5 hidden md:table-cell">24h Volume</th>
+                  <th class="py-2.5 hidden lg:table-cell">Market Cap</th>
+                  <th class="py-2.5 text-right pr-2">Action</th>
+                </tr>
+              </thead>
+              <tbody id="marketsTableBody" class="divide-y divide-slate-800/60 font-mono">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- VIEW 3: PORTFOLIO & ASSET ALLOCATION (RELATED PAGE) -->
+      <!-- ========================================================================= -->
+      <section id="view-portfolio" class="main-view hidden space-y-4 animate-fadeIn">
+        
+        <!-- Net Worth & Overview Header -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <!-- Total Balance Card -->
+          <div class="md:col-span-7 crypto-card-gold p-4 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Demo Portfolio Valuation</span>
+                <span class="px-2 py-0.5 rounded bg-brand-gold/15 border border-brand-gold/30 text-brand-gold text-[10px] font-bold">Paper Trading</span>
+              </div>
+              <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mt-1" id="portTotalNetWorth">$15,352.18</h2>
+              <p class="text-xs text-emerald-400 font-semibold mt-1 flex items-center gap-1.5">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+                <span id="port24hProfitText">+$502.18 (+3.38%)</span> Past 24h Performance
+              </p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-800/80 text-xs">
+              <div>
+                <span class="text-slate-400 block text-[11px]">Free Demo Cash</span>
+                <strong class="text-emerald-400 text-sm font-bold" id="portAvailableCash">$10,000.00</strong>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[11px]">Crypto Allocation</span>
+                <strong class="text-brand-gold text-sm font-bold" id="portCryptoAllocationVal">$5,352.18</strong>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[11px]">Total Return</span>
+                <strong class="text-emerald-400 text-sm font-bold">+10.35%</strong>
+              </div>
+            </div>
+
+            <!-- Quick Action Buttons -->
+            <div class="flex items-center gap-2 mt-4">
+              <button onclick="openModal('depositModal')" class="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition">
+                <i class="fa-solid fa-arrow-down"></i> Deposit
+              </button>
+              <button onclick="openModal('withdrawModal')" class="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-700 transition">
+                <i class="fa-solid fa-arrow-up"></i> Withdraw
+              </button>
+              <button onclick="switchMainTab('trade')" class="flex-1 py-2 rounded-xl bg-brand-gold hover:bg-brand-goldHover text-brand-dark font-bold text-xs flex items-center justify-center gap-1.5 transition">
+                <i class="fa-solid fa-arrow-right-arrow-left"></i> Trade
+              </button>
+            </div>
+          </div>
+
+          <!-- Asset Allocation Donut / Bar Chart -->
+          <div class="md:col-span-5 crypto-card p-4 flex flex-col justify-between">
+            <h3 class="text-sm font-bold text-slate-200 mb-2 flex items-center justify-between">
+              <span>Asset Allocation</span>
+              <span class="text-[11px] text-slate-500">4 Assets</span>
+            </h3>
+
+            <!-- Allocation Progress Bars -->
+            <div class="space-y-3 my-auto">
+              <!-- BTC -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="flex items-center gap-1.5 font-semibold text-slate-200"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Bitcoin (BTC)</span>
+                  <span class="font-mono text-slate-300 font-bold">52.3% ($5,352.18)</span>
+                </div>
+                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div class="h-full bg-amber-500 rounded-full" style="width: 52.3%"></div>
+                </div>
+              </div>
+
+              <!-- USDT -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="flex items-center gap-1.5 font-semibold text-slate-200"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> USD Demo Cash</span>
+                  <span class="font-mono text-slate-300 font-bold">41.2% ($10,000.00)</span>
+                </div>
+                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div class="h-full bg-emerald-500 rounded-full" style="width: 41.2%"></div>
+                </div>
+              </div>
+
+              <!-- ETH -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="flex items-center gap-1.5 font-semibold text-slate-200"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Ethereum (ETH)</span>
+                  <span class="font-mono text-slate-300 font-bold">4.5% ($685.20)</span>
+                </div>
+                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div class="h-full bg-indigo-500 rounded-full" style="width: 4.5%"></div>
+                </div>
+              </div>
+
+              <!-- SOL -->
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="flex items-center gap-1.5 font-semibold text-slate-200"><span class="w-2.5 h-2.5 rounded-full bg-teal-400"></span> Solana (SOL)</span>
+                  <span class="font-mono text-slate-300 font-bold">2.0% ($314.80)</span>
+                </div>
+                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div class="h-full bg-teal-400 rounded-full" style="width: 2.0%"></div>
+                </div>
+              </div>
+            </div>
+
+            <p class="text-[10px] text-slate-500 mt-2 text-center">Diversified institutional risk weighting</p>
+          </div>
+        </div>
+
+        <!-- Portfolio Holdings Table -->
+        <div class="crypto-card p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white">Your Asset Balances</h3>
+            <span class="text-xs text-slate-400">Real-time valuation based on Binance feed</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-slate-400 border-b border-slate-800 text-[11px] font-semibold">
+                <tr>
+                  <th class="py-2.5 pl-2">Asset</th>
+                  <th class="py-2.5">Total Balance</th>
+                  <th class="py-2.5">Current Price</th>
+                  <th class="py-2.5">Total Value (USD)</th>
+                  <th class="py-2.5">Unrealized P&L</th>
+                  <th class="py-2.5 text-right pr-2">Quick Action</th>
+                </tr>
+              </thead>
+              <tbody id="portHoldingsTableBody" class="divide-y divide-slate-800/60 font-mono">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- VIEW 4: STAKING & EARN / INVESTMENT PLANS (RELATED PAGE) -->
+      <!-- ========================================================================= -->
+      <section id="view-earn" class="main-view hidden space-y-4 animate-fadeIn">
+        <div class="crypto-card p-4 space-y-2">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-gem text-amber-400"></i> Crypto Staking & Yield Plans
+              </h2>
+              <p class="text-xs text-slate-400">Earn daily guaranteed APY yields on your Bitcoin and digital asset holdings</p>
+            </div>
+            <div class="px-3 py-1 rounded-full bg-amber-500/10 border border-brand-gold/30 text-brand-gold text-xs font-bold">
+              <i class="fa-solid fa-shield-check mr-1"></i> 100% Principal Guaranteed
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 Featured Staking Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="stakingPlansGrid">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Active Staked Contracts Section -->
+        <div class="crypto-card p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-certificate text-emerald-400"></i> My Active Staking Contracts (<span id="activeStakingCount">1</span>)
+            </h3>
+            <span class="text-xs text-emerald-400 font-semibold"><i class="fa-solid fa-clock-rotate-left mr-1"></i>Auto Payout Active</span>
+          </div>
+
+          <div id="activeStakingList" class="space-y-2 text-xs">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- VIEW 5: ORDER HISTORY & AUDIT LOG (RELATED PAGE) -->
+      <!-- ========================================================================= -->
+      <section id="view-orders" class="main-view hidden space-y-4 animate-fadeIn">
+        <div class="crypto-card p-4 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-receipt text-brand-gold"></i> Transaction Ledger & Order History
+              </h2>
+              <p class="text-xs text-slate-400">Audit trail of all executed buys, sells, staking plans, and transfers</p>
+            </div>
+
+            <!-- Filters -->
+            <div class="flex items-center gap-1 text-xs">
+              <button onclick="filterOrderHistory('ALL', this)" class="order-hist-filter px-2.5 py-1 rounded-md font-bold bg-brand-gold text-brand-dark">All</button>
+              <button onclick="filterOrderHistory('BUY', this)" class="order-hist-filter px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 hover:text-white">Buys</button>
+              <button onclick="filterOrderHistory('SELL', this)" class="order-hist-filter px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 hover:text-white">Sells</button>
+              <button onclick="filterOrderHistory('STAKE', this)" class="order-hist-filter px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 hover:text-white">Staking</button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-slate-400 border-b border-slate-800 text-[11px] font-semibold">
+                <tr>
+                  <th class="py-2.5 pl-2">Order ID</th>
+                  <th class="py-2.5">Type</th>
+                  <th class="py-2.5">Asset</th>
+                  <th class="py-2.5">Executed Price</th>
+                  <th class="py-2.5">Quantity</th>
+                  <th class="py-2.5">Total Value</th>
+                  <th class="py-2.5">Realized P&L</th>
+                  <th class="py-2.5">Timestamp</th>
+                  <th class="py-2.5 text-right pr-2">Receipt</th>
+                </tr>
+              </thead>
+              <tbody id="orderHistoryTableBody" class="divide-y divide-slate-800/60 font-mono">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- VIEW 6: PRICE ALERTS & SIGNALS HUB (RELATED PAGE) -->
+      <!-- ========================================================================= -->
+      <section id="view-alerts" class="main-view hidden space-y-4 animate-fadeIn">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <!-- Active Price Alerts (Col 7) -->
+          <div class="md:col-span-7 crypto-card p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-base font-bold text-white flex items-center gap-1.5">
+                  <i class="fa-solid fa-bell text-brand-gold"></i> Custom Price Triggers
+                </h2>
+                <p class="text-xs text-slate-400">Receive instant push notification when price hits target</p>
+              </div>
+              <button onclick="openModal('alertSettingModal')" class="px-3 py-1.5 rounded-lg bg-brand-gold hover:bg-brand-goldHover text-brand-dark font-bold text-xs flex items-center gap-1 shadow-sm transition">
+                <i class="fa-solid fa-plus"></i> New Alert
+              </button>
+            </div>
+
+            <div id="alertsFullList" class="space-y-2">
+              <!-- Injected via JS -->
+            </div>
+          </div>
+
+          <!-- Algorithmic Market Signals (Col 5) -->
+          <div class="md:col-span-5 crypto-card p-4 space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 class="text-sm font-bold text-slate-200 flex items-center gap-1.5">
+                <i class="fa-solid fa-satellite-dish text-emerald-400"></i> Live Quantitative Signals
+              </h3>
+              <span class="text-[10px] text-emerald-400 font-bold bg-emerald-500/15 px-2 py-0.5 rounded">ALGO ACTIVE</span>
+            </div>
+
+            <div class="space-y-2.5 text-xs" id="signalsFeedList">
+              <!-- Injected via JS -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ==================== MOBILE BOTTOM NAVIGATION BAR ==================== -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-[#090d16]/98 backdrop-blur-lg border-t border-slate-800/90 z-40 px-2 py-1.5">
+      <div class="grid grid-cols-5 items-center justify-around text-center">
+        <button onclick="switchMainTab('trade')" data-tab="trade" class="mobile-nav-btn py-1 text-brand-gold flex flex-col items-center gap-0.5">
+          <i class="fa-solid fa-chart-line text-sm"></i>
+          <span class="text-[10px] font-semibold">Trade</span>
+        </button>
+        <button onclick="switchMainTab('markets')" data-tab="markets" class="mobile-nav-btn py-1 text-slate-400 hover:text-white flex flex-col items-center gap-0.5">
+          <i class="fa-solid fa-table-cells text-sm"></i>
+          <span class="text-[10px] font-medium">Markets</span>
+        </button>
+        <button onclick="switchMainTab('portfolio')" data-tab="portfolio" class="mobile-nav-btn py-1 text-slate-400 hover:text-white flex flex-col items-center gap-0.5">
+          <i class="fa-solid fa-chart-pie text-sm"></i>
+          <span class="text-[10px] font-medium">Portfolio</span>
+        </button>
+        <button onclick="switchMainTab('earn')" data-tab="earn" class="mobile-nav-btn py-1 text-slate-400 hover:text-white flex flex-col items-center gap-0.5">
+          <i class="fa-solid fa-gem text-sm text-amber-400"></i>
+          <span class="text-[10px] font-medium">Earn</span>
+        </button>
+        <button onclick="switchMainTab('alerts')" data-tab="alerts" class="mobile-nav-btn relative py-1 text-slate-400 hover:text-white flex flex-col items-center gap-0.5">
+          <div class="relative">
+            <i class="fa-solid fa-bell text-sm"></i>
+            <span id="navAlertBadgeMob" class="absolute -top-1 -right-2 w-3.5 h-3.5 rounded-full bg-rose-600 text-white text-[8px] font-bold flex items-center justify-center">3</span>
+          </div>
+          <span class="text-[10px] font-medium">Alerts</span>
+        </button>
+      </div>
+    </nav>
+
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODALS (FULL INTERACTIVE PROTOTYPE FLOWS) -->
+  <!-- ========================================================================= -->
+
+  <!-- 1. DEPOSIT MODAL (CRYPTO & FIAT / BKASH) -->
+  <div id="depositModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="crypto-card-gold w-full max-w-md p-4 sm:p-5 space-y-4 animate-fadeIn">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-arrow-down-to-bracket text-brand-gold"></i> Deposit Demo Funds
+        </h3>
+        <button onclick="closeModal('depositModal')" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Deposit Tabs: Crypto / Fiat Card / bKash Local Gateway -->
+      <div class="grid grid-cols-3 gap-1 bg-[#0b0f19] p-1 rounded-xl text-xs font-semibold">
+        <button onclick="setDepositMethod('CRYPTO', this)" class="dep-tab-btn py-1.5 rounded-lg bg-brand-gold text-brand-dark font-bold">Crypto (BTC/USDT)</button>
+        <button onclick="setDepositMethod('CARD', this)" class="dep-tab-btn py-1.5 rounded-lg text-slate-400 hover:text-white">Card / Wire</button>
+        <button onclick="setDepositMethod('LOCAL', this)" class="dep-tab-btn py-1.5 rounded-lg text-slate-400 hover:text-white">bKash / Nagad</button>
+      </div>
+
+      <!-- Crypto Tab Content -->
+      <div id="depCryptoTab" class="space-y-3">
+        <div class="flex flex-col items-center bg-[#090d16] p-4 rounded-xl border border-slate-800">
+          <!-- Mock QR Code SVG -->
+          <div class="w-32 h-32 bg-white p-2 rounded-lg shadow-md mb-2 flex items-center justify-center">
+            <svg viewBox="0 0 100 100" class="w-full h-full">
+              <rect width="100" height="100" fill="white" />
+              <rect x="10" y="10" width="24" height="24" fill="black" />
+              <rect x="14" y="14" width="16" height="16" fill="white" />
+              <rect x="18" y="18" width="8" height="8" fill="black" />
+              <rect x="66" y="10" width="24" height="24" fill="black" />
+              <rect x="70" y="14" width="16" height="16" fill="white" />
+              <rect x="74" y="18" width="8" height="8" fill="black" />
+              <rect x="10" y="66" width="24" height="24" fill="black" />
+              <rect x="14" y="70" width="16" height="16" fill="white" />
+              <rect x="18" y="74" width="8" height="8" fill="black" />
+              <rect x="42" y="18" width="12" height="12" fill="black" />
+              <rect x="42" y="42" width="16" height="16" fill="black" />
+              <rect x="66" y="42" width="10" height="10" fill="black" />
+              <rect x="42" y="66" width="12" height="20" fill="black" />
+              <rect x="66" y="66" width="24" height="10" fill="black" />
+            </svg>
+          </div>
+          <span class="text-xs font-mono text-slate-300 text-center break-all">bc1q4r8zk3mp92vpt75q8x0y72s2z0j4h7kd6w932m</span>
+          <button onclick="copyDepositAddress()" class="mt-2 px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-brand-gold text-[11px] font-bold border border-slate-700 flex items-center gap-1">
+            <i class="fa-regular fa-copy"></i> Copy BTC Address
+          </button>
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <span>Instant Demo Credit:</span>
+          <div class="flex gap-1.5">
+            <button onclick="injectDemoCash(1000)" class="px-2.5 py-1 rounded bg-emerald-600 text-white font-bold hover:bg-emerald-500">+ $1,000</button>
+            <button onclick="injectDemoCash(5000)" class="px-2.5 py-1 rounded bg-brand-gold text-brand-dark font-bold hover:bg-brand-goldHover">+ $5,000</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card / Local Tab Content (Hidden by default) -->
+      <div id="depOtherTab" class="hidden space-y-3 text-xs">
+        <label class="block text-slate-300 font-semibold">Select Deposit Amount (USD)</label>
+        <input type="number" id="fiatDepositAmount" value="500" class="w-full px-3 py-2 bg-[#090d16] border border-slate-700 rounded-lg text-white font-bold text-sm focus:outline-none focus:border-brand-gold font-mono" />
+        <button onclick="executeMockFiatDeposit()" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition">
+          Confirm Instant Deposit
+        </button>
+      </div>
+
+      <div class="pt-2 border-t border-slate-800 text-[11px] text-slate-500 text-center">
+        Demo test environment • Zero real monetary liabilities
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. WITHDRAWAL MODAL -->
+  <div id="withdrawModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="crypto-card-gold w-full max-w-md p-4 sm:p-5 space-y-4 animate-fadeIn">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-arrow-up-from-bracket text-brand-gold"></i> Withdraw Demo Funds
+        </h3>
+        <button onclick="closeModal('withdrawModal')" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Destination Bitcoin / TRC-20 Address</label>
+          <input type="text" placeholder="Paste external wallet address..." class="w-full px-3 py-2 bg-[#090d16] border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-brand-gold" />
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="text-slate-300 font-semibold">Withdrawal Amount (USD)</label>
+            <span class="text-slate-400">Available: <strong class="text-emerald-400" id="withdrawAvailableCash">$10,000.00</strong></span>
+          </div>
+          <input type="number" id="withdrawAmountInput" value="250" class="w-full px-3 py-2 bg-[#090d16] border border-slate-700 rounded-lg text-white font-bold font-mono focus:outline-none focus:border-brand-gold" />
+        </div>
+
+        <div class="p-2.5 rounded-lg bg-[#090d16] border border-slate-800 space-y-1 text-[11px]">
+          <div class="flex justify-between text-slate-400">
+            <span>Network Mining Fee:</span>
+            <span class="text-slate-200 font-mono">$1.50</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span>Estimated Transfer Time:</span>
+            <span class="text-emerald-400">~2 Mins (Instant Demo)</span>
+          </div>
+        </div>
+
+        <button onclick="executeMockWithdrawal()" class="w-full py-2.5 rounded-xl bg-brand-gold hover:bg-brand-goldHover text-brand-dark font-extrabold text-sm transition">
+          Authorize Withdrawal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. SET PRICE ALERT MODAL -->
+  <div id="alertSettingModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="crypto-card-gold w-full max-w-sm p-4 space-y-3.5 animate-fadeIn">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-bell text-brand-gold"></i> Create New Price Alert
+        </h3>
+        <button onclick="closeModal('alertSettingModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="space-y-2.5 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Target Asset</label>
+          <select id="alertAssetSelect" class="w-full bg-[#090d16] border border-slate-700 rounded-lg px-3 py-2 text-white font-bold focus:outline-none">
+            <option value="BTC" selected>Bitcoin (BTC)</option>
+            <option value="ETH">Ethereum (ETH)</option>
+            <option value="SOL">Solana (SOL)</option>
+            <option value="BNB">Binance Coin (BNB)</option>
+            <option value="XRP">XRP Ripple</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Trigger Condition</label>
+          <select id="alertConditionSelect" class="w-full bg-[#090d16] border border-slate-700 rounded-lg px-3 py-2 text-white font-semibold focus:outline-none">
+            <option value="ABOVE">Price Rises Above Target (&gt;=)</option>
+            <option value="BELOW">Price Drops Below Target (&lt;=)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Target Price (USD)</label>
+          <input type="number" id="alertTargetPriceInput" value="95000" class="w-full bg-[#090d16] border border-slate-700 rounded-lg px-3 py-2 text-white font-extrabold font-mono focus:outline-none focus:border-brand-gold" />
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Alert Label / Note</label>
+          <input type="text" id="alertNoteInput" value="Resistance Breakout Trigger" class="w-full bg-[#090d16] border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none" />
+        </div>
+
+        <button onclick="createNewPriceAlert()" class="w-full py-2.5 rounded-xl bg-brand-gold hover:bg-brand-goldHover text-brand-dark font-extrabold text-xs transition">
+          Save Trigger Alert
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. DIGITAL TRANSACTION RECEIPT MODAL -->
+  <div id="receiptModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="crypto-card-gold w-full max-w-sm p-5 space-y-4 animate-fadeIn" id="receiptCardContent">
+      <!-- Injected dynamically on row click -->
+    </div>
+  </div>
+
+  <!-- 5. NOTIFICATIONS MODAL -->
+  <div id="notificationsModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="crypto-card-gold w-full max-w-sm p-4 space-y-3 animate-fadeIn">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-bell text-brand-gold"></i> Notification Center
+        </h3>
+        <button onclick="closeModal('notificationsModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div id="notificationsList" class="space-y-2 max-h-72 overflow-y-auto">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. USER PROFILE & WALLET MODAL -->
+  <div id="profileModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="crypto-card-gold w-full max-w-sm p-4 space-y-4 animate-fadeIn">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <h3 class="text-sm font-bold text-white">Institutional Trader Profile</h3>
+        <button onclick="closeModal('profileModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="flex items-center gap-3 p-3 rounded-xl bg-[#090d16] border border-slate-800">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-600 to-yellow-400 text-white font-extrabold flex items-center justify-center text-xl shadow-lg">
+          SI
+        </div>
+        <div>
+          <h4 class="font-bold text-white text-sm">Sagar Islamic Light</h4>
+          <p class="text-[11px] text-emerald-400 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>Tier 2 KYC Verified</p>
+          <p class="text-[10px] text-slate-500">Account ID: #CP-88419-DEMO</p>
+        </div>
+      </div>
+
+      <div class="space-y-2 text-xs bg-[#090d16] p-3 rounded-xl border border-slate-800">
+        <div class="flex justify-between"><span class="text-slate-400">Demo Cash Available:</span><strong class="text-emerald-400 font-mono" id="modalCashVal">$10,000.00</strong></div>
+        <div class="flex justify-between"><span class="text-slate-400">Bitcoin Portfolio:</span><strong class="text-brand-gold font-mono" id="modalBtcVal">0.057842 BTC</strong></div>
+        <div class="flex justify-between"><span class="text-slate-400">Total Unrealized P&L:</span><strong class="text-emerald-400 font-mono">+$502.18</strong></div>
+      </div>
+
+      <div class="flex gap-2">
+        <button onclick="injectDemoCash(1000)" class="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition">+ $1,000 Cash</button>
+        <button onclick="resetDemoState()" class="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition">Reset Demo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. DEMO WALLET MODAL -->
+  <div id="walletModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="crypto-card-gold w-full max-w-sm p-4 space-y-4 animate-fadeIn">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <h3 class="text-sm font-bold text-white flex items-center gap-1.5"><i class="fa-solid fa-wallet text-brand-gold"></i> Demo Cash & Holdings</h3>
+        <button onclick="closeModal('walletModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="p-3 rounded-xl bg-[#090d16] border border-slate-800 space-y-2">
+        <span class="text-slate-400 text-xs block">Available Trading Balance</span>
+        <h3 class="text-2xl font-extrabold text-emerald-400 font-mono" id="walletModalCash">$10,000.00</h3>
+        <p class="text-[11px] text-slate-400">Paper trading credits for demo orders & staking.</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <button onclick="injectDemoCash(1000); closeModal('walletModal')" class="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition flex items-center justify-center gap-1">
+          <i class="fa-solid fa-plus"></i> Add $1,000
+        </button>
+        <button onclick="injectDemoCash(5000); closeModal('walletModal')" class="py-2.5 rounded-xl bg-brand-gold hover:bg-brand-goldHover text-brand-dark font-extrabold transition flex items-center justify-center gap-1">
+          <i class="fa-solid fa-plus"></i> Add $5,000
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER FOR HIGH-FLYING SYSTEM NOTIFICATIONS -->
+  <div id="toastContainer" class="fixed top-12 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col items-center gap-2 w-[92%] max-w-md"></div>
+
+  <!-- ========================================================================= -->
+  <!-- APPLICATION LOGIC & REAL-TIME WEBSOCKET/REST CLIENT ENGINE -->
+  <!-- ========================================================================= -->
+  <script>
+    // --- GLOBAL CONSTANTS ---
+    const MAX_PROFIT_RATIO = 0.05; // +5% Max Profit Cap on trades
+    const MAX_LOSS_RATIO = 0.10;   // -10% Max Stop Loss Cap on trades
+    const TRADING_FEE_RATIO = 0.001; // 0.10% Spot fee
+
+    // Helper: Generate Initial Seed Candles for smooth chart initial render
+    function generateCandles(basePrice, count = 48) {
+      const candles = [];
+      const nowSec = Math.floor(Date.now() / 1000) - count * 900;
+      let prevClose = basePrice * 0.985;
+      for (let i = 0; i < count; i++) {
+        const open = prevClose;
+        const delta = (Math.sin(i * 0.45) * 0.0035 + (Math.random() - 0.49) * 0.006) * basePrice;
+        const close = i === count - 1 ? basePrice : Number((open + delta).toFixed(basePrice < 5 ? 4 : 2));
+        const high = Number((Math.max(open, close) + Math.abs(delta) * 0.6 + basePrice * 0.001).toFixed(basePrice < 5 ? 4 : 2));
+        const low = Number((Math.min(open, close) - Math.abs(delta) * 0.6 - basePrice * 0.001).toFixed(basePrice < 5 ? 4 : 2));
+        candles.push({
+          time: nowSec + i * 900,
+          open: Number(open.toFixed(basePrice < 5 ? 4 : 2)),
+          high,
+          low,
+          close
+        });
+        prevClose = close;
+      }
+      return candles;
+    }
+
+    // --- APPLICATION STATE ---
+    const DEFAULT_STATE = {
+      viewMode: 'desktop',
+      activeTab: 'trade',
+      activeCoin: 'BTC',
+      orderSide: 'BUY',
+      orderType: 'MARKET', // 'MARKET' or 'STAKING'
+      timeframe: '1D',
+      chartType: 'area', // 'area' or 'candle'
+      isLiveFeed: true,
+      cashUsd: 10000.00,
+      portfolio: {
+        BTC: { symbol: 'BTC', amount: 0.057842, costBasis: 4850.00 },
+        ETH: { symbol: 'ETH', amount: 0.218, costBasis: 650.00 },
+        SOL: { symbol: 'SOL', amount: 1.49, costBasis: 290.00 }
+      },
+      coins: {
+        BTC: {
+          symbol: 'BTC',
+          pair: 'BTCUSDT',
+          name: 'Bitcoin',
+          badge: '₿',
+          category: 'L1',
+          price: 92645.30,
+          change24h: 2.35,
+          changeDollar: 2126.40,
+          high: 93478.90,
+          low: 89752.10,
+          vol: '48.25B',
+          marketCap: '1.82T',
+          color: '#f5b82e',
+          candles: generateCandles(92645.30, 50)
+        },
+        ETH: {
+          symbol: 'ETH',
+          pair: 'ETHUSDT',
+          name: 'Ethereum',
+          badge: 'Ξ',
+          category: 'L1',
+          price: 3142.18,
+          change24h: 1.85,
+          changeDollar: 57.10,
+          high: 3188.00,
+          low: 3060.40,
+          vol: '22.10B',
+          marketCap: '378.4B',
+          color: '#627eea',
+          candles: generateCandles(3142.18, 50)
+        },
+        SOL: {
+          symbol: 'SOL',
+          pair: 'SOLUSDT',
+          name: 'Solana',
+          badge: '≡',
+          category: 'L1',
+          price: 210.34,
+          change24h: 4.12,
+          changeDollar: 8.36,
+          high: 216.50,
+          low: 201.20,
+          vol: '9.80B',
+          marketCap: '98.5B',
+          color: '#14f195',
+          candles: generateCandles(210.34, 50)
+        },
+        BNB: {
+          symbol: 'BNB',
+          pair: 'BNBUSDT',
+          name: 'BNB',
+          badge: '❖',
+          category: 'L1',
+          price: 624.50,
+          change24h: 0.95,
+          changeDollar: 5.90,
+          high: 631.20,
+          low: 614.00,
+          vol: '3.40B',
+          marketCap: '91.2B',
+          color: '#f3ba2f',
+          candles: generateCandles(624.50, 50)
+        },
+        XRP: {
+          symbol: 'XRP',
+          pair: 'XRPUSDT',
+          name: 'Ripple',
+          badge: '✕',
+          category: 'L1',
+          price: 0.5342,
+          change24h: -0.45,
+          changeDollar: -0.0024,
+          high: 0.5420,
+          low: 0.5280,
+          vol: '2.10B',
+          marketCap: '30.1B',
+          color: '#ffffff',
+          candles: generateCandles(0.5342, 50)
+        },
+        ADA: {
+          symbol: 'ADA',
+          pair: 'ADAUSDT',
+          name: 'Cardano',
+          badge: '₳',
+          category: 'L1',
+          price: 0.3850,
+          change24h: 2.10,
+          changeDollar: 0.0079,
+          high: 0.3920,
+          low: 0.3750,
+          vol: '1.20B',
+          marketCap: '13.8B',
+          color: '#0033ad',
+          candles: generateCandles(0.3850, 50)
+        }
+      },
+      activeTrades: [],
+      tradeHistory: [
+        { id: 'ORD-8819', type: 'BUY', coin: 'BTC', price: 83849.10, qty: 0.057842, totalUsd: 4850.00, fee: 4.85, pnl: null, time: '2026-11-25 10:15', status: 'Completed', txHash: '0x7f9a...3c81' },
+        { id: 'ORD-8742', type: 'BUY', coin: 'ETH', price: 2981.65, qty: 0.218, totalUsd: 650.00, fee: 0.65, pnl: null, time: '2026-11-24 18:40', status: 'Completed', txHash: '0x2b4c...91d2' }
+      ],
+      activeStaking: [
+        { id: 'STK-4401', planName: 'Bitcoin Safe Yield', coin: 'BTC', principalUsd: 1000.00, apy: 6.5, durationDays: 30, daysLeft: 22, earnedUsd: 4.85, status: 'Active' }
+      ],
+      alerts: [
+        { id: 1, coin: 'BTC', condition: 'ABOVE', target: 95000, note: 'Breakout above $95K', triggered: false, enabled: true },
+        { id: 2, coin: 'BTC', condition: 'BELOW', target: 88000, note: 'Dip Buy Level', triggered: false, enabled: true },
+        { id: 3, coin: 'ETH', condition: 'ABOVE', target: 3300, note: 'Ethereum Rally Peak', triggered: false, enabled: true }
+      ],
+      notifications: [
+        { id: 101, title: 'Deposit Confirmed', body: '$10,000 Demo USD credited successfully.', time: '10 mins ago', type: 'success' },
+        { id: 102, title: 'Price Alert Ready', body: 'Bitcoin is hovering at $92,645. Alert set for $95,000.', time: '25 mins ago', type: 'info' },
+        { id: 103, title: 'Staking Payout', body: 'Daily interest +$0.22 added to your demo wallet.', time: '1 hour ago', type: 'success' }
+      ]
+    };
+
+    let state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    let tvChart = null;
+    let areaSeries = null;
+    let candleSeries = null;
+    let binanceWs = null;
+    let simInterval = null;
+
+    // --- UTILITY FORMATTERS ---
+    function formatUsd(val, decimals = 2) {
+      return '$' + Number(val).toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function formatCoinPrice(val) {
+      return val < 10 ? formatUsd(val, 4) : formatUsd(val, 2);
+    }
+
+    // --- TOAST NOTIFICATIONS (NO BLOCKING POPUPS) ---
+    function showToast(title, message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      const theme = type === 'success'
+        ? 'bg-[#0b1f13]/95 border-emerald-500 text-emerald-100 shadow-emerald-950/80'
+        : type === 'danger'
+        ? 'bg-[#260c0c]/95 border-rose-500 text-rose-100 shadow-rose-950/80'
+        : 'bg-[#1e1708]/95 border-brand-gold text-amber-100 shadow-amber-950/80';
+
+      const icon = type === 'success'
+        ? '<i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>'
+        : type === 'danger'
+        ? '<i class="fa-solid fa-circle-xmark text-rose-400 text-base"></i>'
+        : '<i class="fa-solid fa-bell text-brand-gold text-base"></i>';
+
+      toast.className = `w-full px-4 py-3 rounded-xl border backdrop-blur-md flex items-center gap-3 shadow-2xl transition-all duration-300 animate-fadeIn ${theme}`;
+      toast.innerHTML = `
+        ${icon}
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-bold leading-tight">${title}</p>
+          <p class="text-[11px] opacity-90 truncate mt-0.5">${message}</p>
+        </div>
+      `;
+
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-10px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // --- VIEWPORT TOGGLE: DESKTOP TERMINAL VS MOBILE APP FRAME ---
+    function setViewMode(mode) {
+      state.viewMode = mode;
+      const app = document.getElementById('appContainer');
+      const deskBtn = document.getElementById('viewModeDesktopBtn');
+      const mobBtn = document.getElementById('viewModeMobileBtn');
+
+      if (mode === 'mobile') {
+        app.classList.add('mobile-frame');
+        mobBtn.className = 'px-2.5 py-1 rounded text-[11px] font-bold bg-brand-gold text-brand-dark transition flex items-center gap-1.5 shadow-sm';
+        deskBtn.className = 'px-2.5 py-1 rounded text-[11px] font-semibold text-slate-300 hover:text-white transition flex items-center gap-1.5';
+        showToast('Mobile Preview Mode', 'Fitted to standard smartphone screen dimensions.', 'info');
+      } else {
+        app.classList.remove('mobile-frame');
+        deskBtn.className = 'px-2.5 py-1 rounded text-[11px] font-bold bg-brand-gold text-brand-dark transition flex items-center gap-1.5 shadow-sm';
+        mobBtn.className = 'px-2.5 py-1 rounded text-[11px] font-semibold text-slate-300 hover:text-white transition flex items-center gap-1.5';
+        showToast('Desktop Mode', 'Expanded full institutional multi-column terminal.', 'info');
+      }
+
+      if (tvChart) {
+        setTimeout(() => resizeChart(), 150);
+      }
+    }
+
+    // --- MAIN NAVIGATION VIEW SWITCHER ---
+    function switchMainTab(tabId) {
+      state.activeTab = tabId;
+
+      // Update Desktop Nav Tabs
+      document.querySelectorAll('.nav-tab-link').forEach(btn => {
+        if (btn.getAttribute('data-tab') === tabId) {
+          btn.className = 'nav-tab-link px-3 py-1.5 rounded-lg text-xs font-bold text-brand-gold bg-brand-gold/15 border border-brand-gold/30 flex items-center gap-1.5 transition';
+        } else {
+          btn.className = 'nav-tab-link px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition';
+        }
+      });
+
+      // Update Mobile Nav Tabs
+      document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+        if (btn.getAttribute('data-tab') === tabId) {
+          btn.className = 'mobile-nav-btn py-1 text-brand-gold flex flex-col items-center gap-0.5';
+        } else {
+          btn.className = 'mobile-nav-btn py-1 text-slate-400 hover:text-white flex flex-col items-center gap-0.5';
+        }
+      });
+
+      // Switch Visibility of Views
+      document.querySelectorAll('.main-view').forEach(view => {
+        view.classList.add('hidden');
+      });
+
+      const activeView = document.getElementById(`view-${tabId}`);
+      if (activeView) {
+        activeView.classList.remove('hidden');
+      }
+
+      if (tabId === 'trade' && tvChart) {
+        setTimeout(() => resizeChart(), 100);
+      } else if (tabId === 'markets') {
+        renderMarketsTable();
+      } else if (tabId === 'portfolio') {
+        renderPortfolioView();
+      } else if (tabId === 'earn') {
+        renderEarnView();
+      } else if (tabId === 'orders') {
+        renderOrdersView();
+      } else if (tabId === 'alerts') {
+        renderAlertsView();
+      }
+    }
+
+    // --- TRADINGVIEW LIGHTWEIGHT CHARTS INTEGRATION ---
+    function initChart() {
+      const container = document.getElementById('tvChart');
+      const fallback = document.getElementById('fallbackCanvas');
+
+      if (!window.LightweightCharts || !container) {
+        fallback.classList.remove('hidden');
+        container.classList.add('hidden');
+        drawFallbackCanvas();
+        return;
+      }
+
+      container.innerHTML = '';
+      tvChart = LightweightCharts.createChart(container, {
+        width: container.clientWidth,
+        height: container.clientHeight,
+        layout: {
+          background: { type: 'solid', color: 'transparent' },
+          textColor: '#94a3b8',
+          fontFamily: 'Inter, sans-serif',
+          fontSize: 10
+        },
+        grid: {
+          vertLines: { color: 'rgba(255, 255, 255, 0.04)' },
+          horzLines: { color: 'rgba(255, 255, 255, 0.05)' }
+        },
+        crosshair: {
+          mode: LightweightCharts.CrosshairMode.Normal,
+          vertLine: { color: 'rgba(245, 184, 46, 0.5)', labelBackgroundColor: '#f5b82e' },
+          horzLine: { color: 'rgba(245, 184, 46, 0.5)', labelBackgroundColor: '#f5b82e' }
+        },
+        rightPriceScale: {
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          scaleMargins: { top: 0.12, bottom: 0.1 }
+        },
+        timeScale: {
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          timeVisible: true,
+          secondsVisible: false
+        }
+      });
+
+      areaSeries = tvChart.addAreaSeries({
+        topColor: 'rgba(245, 184, 46, 0.45)',
+        bottomColor: 'rgba(245, 184, 46, 0.02)',
+        lineColor: '#f5b82e',
+        lineWidth: 2,
+        priceLineColor: '#f5b82e',
+        priceLineWidth: 1
+      });
+
+      candleSeries = tvChart.addCandlestickSeries({
+        upColor: '#10b981',
+        downColor: '#ef4444',
+        borderUpColor: '#10b981',
+        borderDownColor: '#ef4444',
+        wickUpColor: '#10b981',
+        wickDownColor: '#ef4444',
+        visible: false
+      });
+
+      tvChart.subscribeCrosshairMove(param => {
+        const coin = state.coins[state.activeCoin];
+        const last = coin.candles[coin.candles.length - 1];
+        if (!param || !param.time || !param.seriesData) {
+          updateOhlcDisplay(last);
+          return;
+        }
+        const cData = param.seriesData.get(candleSeries);
+        const aData = param.seriesData.get(areaSeries);
+        if (cData) {
+          updateOhlcDisplay(cData);
+        } else if (aData) {
+          const matched = coin.candles.find(c => c.time === param.time) || { open: aData.value, high: aData.value, low: aData.value, close: aData.value };
+          updateOhlcDisplay(matched);
+        }
+      });
+
+      syncChartData();
+      window.addEventListener('resize', resizeChart);
+    }
+
+    function resizeChart() {
+      const container = document.getElementById('tvChart');
+      if (tvChart && container) {
+        tvChart.applyOptions({
+          width: container.clientWidth,
+          height: container.clientHeight
+        });
+      }
+    }
+
+    function setChartType(type) {
+      state.chartType = type;
+      const areaBtn = document.getElementById('chartModeAreaBtn');
+      const candleBtn = document.getElementById('chartModeCandleBtn');
+
+      if (type === 'area') {
+        areaBtn.className = 'px-2.5 py-1 rounded text-xs font-bold bg-brand-gold text-brand-dark transition flex items-center gap-1';
+        candleBtn.className = 'px-2.5 py-1 rounded text-xs font-semibold text-slate-300 hover:text-white transition flex items-center gap-1';
+        if (areaSeries && candleSeries) {
+          areaSeries.applyOptions({ visible: true });
+          candleSeries.applyOptions({ visible: false });
+        }
+      } else {
+        candleBtn.className = 'px-2.5 py-1 rounded text-xs font-bold bg-brand-gold text-brand-dark transition flex items-center gap-1';
+        areaBtn.className = 'px-2.5 py-1 rounded text-xs font-semibold text-slate-300 hover:text-white transition flex items-center gap-1';
+        if (areaSeries && candleSeries) {
+          areaSeries.applyOptions({ visible: false });
+          candleSeries.applyOptions({ visible: true });
+        }
+      }
+
+      syncChartData();
+    }
+
+    function changeTimeframe(tf, btnEl) {
+      state.timeframe = tf;
+      document.querySelectorAll('#chartTimeframeGroup .tf-btn').forEach(b => {
+        b.className = 'tf-btn px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white transition';
+      });
+      if (btnEl) {
+        btnEl.className = 'tf-btn px-2.5 py-1 rounded-md text-xs font-bold bg-brand-gold text-brand-dark shadow transition';
+      }
+      showToast('Timeframe Updated', `Loaded ${tf} candle interval.`, 'info');
+      syncChartData();
+    }
+
+    function toggleChartFullscreen() {
+      const wrapper = document.getElementById('chartContainer');
+      wrapper.classList.toggle('h-[480px]');
+      setTimeout(() => resizeChart(), 250);
+    }
+
+    function updateOhlcDisplay(c) {
+      if (!c) return;
+      const fmt = v => Number(v) < 10 ? Number(v).toFixed(4) : Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById('ohlcOpen').textContent = '$' + fmt(c.open);
+      document.getElementById('ohlcHigh').textContent = '$' + fmt(c.high);
+      document.getElementById('ohlcLow').textContent = '$' + fmt(c.low);
+      document.getElementById('ohlcClose').textContent = '$' + fmt(c.close);
+    }
+
+    function syncChartData() {
+      const coin = state.coins[state.activeCoin];
+      if (!coin || !coin.candles.length) return;
+
+      const lastCandle = coin.candles[coin.candles.length - 1];
+      updateOhlcDisplay(lastCandle);
+
+      if (!areaSeries || !candleSeries) {
+        drawFallbackCanvas();
+        return;
+      }
+
+      const sorted = [...coin.candles].sort((a, b) => a.time - b.time);
+      const uniqueCandles = [];
+      let prevTime = -1;
+      for (const item of sorted) {
+        if (item.time > prevTime) {
+          uniqueCandles.push(item);
+          prevTime = item.time;
+        }
+      }
+
+      const lineData = uniqueCandles.map(c => ({ time: c.time, value: c.close }));
+      areaSeries.setData(lineData);
+      candleSeries.setData(uniqueCandles);
+      tvChart.timeScale().fitContent();
+    }
+
+    // Fallback Canvas in case offline CDN is blocked
+    function drawFallbackCanvas() {
+      const canvas = document.getElementById('fallbackCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const coin = state.coins[state.activeCoin];
+      const candles = coin.candles;
+      ctx.clearRect(0, 0, rect.width, rect.height);
+
+      let min = Math.min(...candles.map(c => c.low));
+      let max = Math.max(...candles.map(c => c.high));
+      const pad = (max - min) * 0.1 || 1;
+      min -= pad; max += pad;
+
+      const toY = val => rect.height - 30 - ((val - min) / (max - min)) * (rect.height - 50);
+
+      // Draw subtle grid
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 4; i++) {
+        const y = 20 + i * (rect.height / 4);
+        ctx.beginPath();
+        ctx.moveTo(40, y);
+        ctx.lineTo(rect.width, y);
+        ctx.stroke();
+      }
+
+      // Draw Area curve
+      ctx.beginPath();
+      candles.forEach((c, i) => {
+        const x = 50 + (i / (candles.length - 1)) * (rect.width - 70);
+        const y = toY(c.close);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = '#f5b82e';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // --- BINANCE REAL-TIME WEBSOCKET + ROBUST SIMULATION ENGINE ---
+    function connectBinanceFeed() {
+      try {
+        const streams = Object.values(state.coins).map(c => `${c.pair.toLowerCase()}@ticker`).join('/');
+        binanceWs = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
+
+        binanceWs.onopen = () => {
+          setLiveFeedStatus(true);
+        };
+
+        binanceWs.onmessage = (event) => {
+          const payload = JSON.parse(event.data);
+          const d = payload && payload.data;
+          if (!d || !d.s) return;
+
+          const coin = Object.values(state.coins).find(c => c.pair === d.s);
+          if (!coin) return;
+
+          const newPrice = parseFloat(d.c);
+          coin.price = newPrice;
+          coin.change24h = parseFloat(d.P);
+          coin.changeDollar = parseFloat(d.p);
+          coin.high = parseFloat(d.h);
+          coin.low = parseFloat(d.l);
+
+          const last = coin.candles[coin.candles.length - 1];
+          if (last) {
+            last.close = newPrice;
+            if (newPrice > last.high) last.high = newPrice;
+            if (newPrice < last.low) last.low = newPrice;
+
+            if (coin.symbol === state.activeCoin && tvChart && areaSeries && candleSeries) {
+              areaSeries.update({ time: last.time, value: newPrice });
+              candleSeries.update(last);
+              updateOhlcDisplay(last);
+            }
+          }
+
+          evaluateTradeLimits();
+          checkAlertTriggers();
+          updateLiveUI();
+        };
+
+        binanceWs.onerror = () => {
+          setLiveFeedStatus(false);
+          startSimulationLoop();
+        };
+
+        binanceWs.onclose = () => {
+          setLiveFeedStatus(false);
+          startSimulationLoop();
+        };
+      } catch (e) {
+        setLiveFeedStatus(false);
+        startSimulationLoop();
+      }
+    }
+
+    function setLiveFeedStatus(isReal) {
+      state.isLiveFeed = isReal;
+      const lbl = document.getElementById('globalLiveLabel');
+      if (lbl) {
+        lbl.textContent = isReal ? 'BINANCE LIVE FEED' : 'REAL-TIME SIMULATOR';
+        lbl.parentElement.className = isReal
+          ? 'flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/70 border border-emerald-500/40 text-emerald-400 font-semibold text-[11px]'
+          : 'flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-950/70 border border-amber-500/40 text-brand-gold font-semibold text-[11px]';
+      }
+    }
+
+    // High fidelity simulation loop for offline or network-blocked environments
+    function startSimulationLoop() {
+      if (simInterval) clearInterval(simInterval);
+      simInterval = setInterval(() => {
+        Object.values(state.coins).forEach(coin => {
+          const delta = (Math.random() - 0.495) * (coin.price * 0.0018);
+          coin.price = Math.max(0.01, Number((coin.price + delta).toFixed(coin.price < 5 ? 4 : 2)));
+          
+          const last = coin.candles[coin.candles.length - 1];
+          if (last) {
+            last.close = coin.price;
+            if (coin.price > last.high) last.high = coin.price;
+            if (coin.price < last.low) last.low = coin.price;
+
+            if (coin.symbol === state.activeCoin && tvChart && areaSeries && candleSeries) {
+              areaSeries.update({ time: last.time, value: coin.price });
+              candleSeries.update(last);
+              updateOhlcDisplay(last);
+            }
+          }
+        });
+
+        // Add a random market trade to order book / recent trades
+        injectRandomRecentTrade();
+        evaluateTradeLimits();
+        checkAlertTriggers();
+        updateLiveUI();
+      }, 1200);
+    }
+
+    // Manual Market Shock: Pump (+5%) or Dump (-5%)
+    function simulateMarketMove(percent) {
+      const coin = state.coins[state.activeCoin];
+      coin.price = Number((coin.price * (1 + percent)).toFixed(coin.price < 5 ? 4 : 2));
+      coin.change24h += percent * 100;
+
+      const last = coin.candles[coin.candles.length - 1];
+      if (last) {
+        last.close = coin.price;
+        if (coin.price > last.high) last.high = coin.price;
+        if (coin.price < last.low) last.low = coin.price;
+        if (tvChart && areaSeries && candleSeries) {
+          areaSeries.update({ time: last.time, value: coin.price });
+          candleSeries.update(last);
+          updateOhlcDisplay(last);
+        }
+      }
+
+      showToast(
+        percent > 0 ? `🚀 Market Pump (+${(percent*100).toFixed(0)}%)` : `📉 Market Drop (${(percent*100).toFixed(0)}%)`,
+        `${coin.name} price moved to ${formatCoinPrice(coin.price)}`,
+        percent > 0 ? 'success' : 'danger'
+      );
+
+      evaluateTradeLimits();
+      checkAlertTriggers();
+      updateLiveUI();
+    }
+
+    // --- ASSET SWITCHING ---
+    function selectActiveCoin(symbol) {
+      if (!state.coins[symbol]) return;
+      state.activeCoin = symbol;
+      const coin = state.coins[symbol];
+
+      // Update Header Text & Titles
+      document.getElementById('cardActiveCoinName').textContent = `${coin.name} (${coin.symbol} / USD)`;
+      document.getElementById('chartCoinHeader').textContent = `${coin.symbol}/USDT`;
+      document.getElementById('tradeSideCoinText').textContent = coin.symbol;
+      document.getElementById('tradeSideCoinTextSell').textContent = coin.symbol;
+      document.getElementById('cardActiveCoinBadge').textContent = coin.badge;
+
+      // Re-render asset selector pills
+      renderCoinSelectorGrid();
+      syncChartData();
+      calculateTradeTotals();
+      updateLiveUI();
+    }
+
+    function renderCoinSelectorGrid() {
+      const container = document.getElementById('coinSelectorGrid');
+      let html = '';
+      Object.values(state.coins).forEach(c => {
+        const isActive = c.symbol === state.activeCoin;
+        const isPos = c.change24h >= 0;
+        html += `
+          <div onclick="selectActiveCoin('${c.symbol}')" class="p-2 rounded-xl cursor-pointer border transition flex flex-col justify-between ${
+            isActive ? 'bg-amber-500/10 border-brand-gold shadow-[0_0_15px_rgba(245,184,46,0.2)]' : 'bg-[#0b0f19] border-slate-800 hover:border-slate-700'
+          }">
+            <div class="flex items-center justify-between">
+              <span class="font-extrabold text-xs text-white">${c.symbol}</span>
+              <span class="text-[10px] font-bold ${isPos ? 'text-emerald-400' : 'text-rose-400'}">
+                ${isPos ? '+' : ''}${c.change24h.toFixed(2)}%
+              </span>
+            </div>
+            <div class="mt-1">
+              <span class="text-xs font-mono font-bold text-slate-200 block truncate">${formatCoinPrice(c.price)}</span>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    // --- ORDER BOOK & RECENT TRADES SIMULATOR ---
+    function renderOrderBook() {
+      const coin = state.coins[state.activeCoin];
+      const mid = coin.price;
+      const asksBox = document.getElementById('orderBookAsks');
+      const bidsBox = document.getElementById('orderBookBids');
+      document.getElementById('orderBookMidPrice').innerHTML = `${formatCoinPrice(mid)} <i class="fa-solid fa-arrow-up text-[10px]"></i>`;
+
+      let asksHtml = '';
+      for (let i = 4; i >= 1; i--) {
+        const p = mid + (i * mid * 0.0006);
+        const s = (0.05 + Math.random() * 0.8).toFixed(3);
+        const t = (p * s).toFixed(0);
+        const barW = Math.min(100, Math.floor(Math.random() * 60 + 20));
+        asksHtml += `
+          <div class="relative flex justify-between items-center px-1.5 py-0.5 rounded overflow-hidden">
+            <div class="absolute right-0 top-0 bottom-0 bg-rose-500/10" style="width: ${barW}%"></div>
+            <span class="relative text-rose-400 font-semibold">${formatCoinPrice(p)}</span>
+            <span class="relative text-slate-300">${s}</span>
+            <span class="relative text-slate-400">$${Number(t).toLocaleString()}</span>
+          </div>
+        `;
+      }
+      asksBox.innerHTML = asksHtml;
+
+      let bidsHtml = '';
+      for (let i = 1; i <= 4; i++) {
+        const p = mid - (i * mid * 0.0006);
+        const s = (0.05 + Math.random() * 0.8).toFixed(3);
+        const t = (p * s).toFixed(0);
+        const barW = Math.min(100, Math.floor(Math.random() * 60 + 20));
+        bidsHtml += `
+          <div class="relative flex justify-between items-center px-1.5 py-0.5 rounded overflow-hidden">
+            <div class="absolute right-0 top-0 bottom-0 bg-emerald-500/10" style="width: ${barW}%"></div>
+            <span class="relative text-emerald-400 font-semibold">${formatCoinPrice(p)}</span>
+            <span class="relative text-slate-300">${s}</span>
+            <span class="relative text-slate-400">$${Number(t).toLocaleString()}</span>
+          </div>
+        `;
+      }
+      bidsBox.innerHTML = bidsHtml;
+    }
+
+    const initialRecentTrades = [];
+    function injectRandomRecentTrade() {
+      const coin = state.coins[state.activeCoin];
+      const isBuy = Math.random() > 0.45;
+      const price = coin.price + (Math.random() - 0.5) * (coin.price * 0.0005);
+      const size = (Math.random() * 0.45 + 0.02).toFixed(4);
+      const timeStr = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      initialRecentTrades.unshift({ price, size, time: timeStr, isBuy });
+      if (initialRecentTrades.length > 8) initialRecentTrades.pop();
+
+      const list = document.getElementById('recentMarketTradesList');
+      if (!list) return;
+      list.innerHTML = initialRecentTrades.map(t => `
+        <div class="grid grid-cols-4 py-0.5 px-1 rounded hover:bg-slate-800/40 transition">
+          <span class="${t.isBuy ? 'text-emerald-400' : 'text-rose-400'} font-semibold">${formatCoinPrice(t.price)}</span>
+          <span class="text-center text-slate-200">${t.size}</span>
+          <span class="text-center text-slate-500 text-[10px]">${t.time}</span>
+          <span class="text-right ${t.isBuy ? 'text-emerald-400' : 'text-rose-400'} font-bold">${t.isBuy ? 'BUY' : 'SELL'}</span>
+        </div>
+      `).join('');
+    }
+
+    // --- BUY & SELL EXECUTION TERMINAL LOGIC ---
+    function setOrderSide(side) {
+      state.orderSide = side;
+      const buyBtn = document.getElementById('orderSideBuyBtn');
+      const sellBtn = document.getElementById('orderSideSellBtn');
+      const execBtn = document.getElementById('mainExecuteOrderBtn');
+      const execText = document.getElementById('executeOrderBtnText');
+      const coin = state.coins[state.activeCoin];
+
+      if (side === 'BUY') {
+        buyBtn.className = 'py-2 rounded-lg text-xs font-extrabold bg-emerald-600 text-white shadow-md shadow-emerald-950/60 transition flex items-center justify-center gap-1.5';
+        sellBtn.className = 'py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5';
+        execBtn.className = 'w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-extrabold text-sm shadow-lg shadow-emerald-950/60 flex items-center justify-center gap-2 transition';
+        execText.textContent = `Confirm Buy ${coin.name}`;
+      } else {
+        sellBtn.className = 'py-2 rounded-lg text-xs font-extrabold bg-rose-600 text-white shadow-md shadow-rose-950/60 transition flex items-center justify-center gap-1.5';
+        buyBtn.className = 'py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5';
+        execBtn.className = 'w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-[0.98] text-white font-extrabold text-sm shadow-lg shadow-rose-950/60 flex items-center justify-center gap-2 transition';
+        execText.textContent = `Confirm Sell ${coin.name}`;
+      }
+
+      calculateTradeTotals();
+    }
+
+    function setOrderType(type) {
+      state.orderType = type;
+      const mktBtn = document.getElementById('orderTypeMarketBtn');
+      const plnBtn = document.getElementById('orderTypePlanBtn');
+      const durGroup = document.getElementById('stakingDurationGroup');
+
+      if (type === 'MARKET') {
+        mktBtn.classList.add('active');
+        plnBtn.classList.remove('active');
+        durGroup.classList.add('hidden');
+      } else {
+        plnBtn.classList.add('active');
+        mktBtn.classList.remove('active');
+        durGroup.classList.remove('hidden');
+      }
+
+      calculateTradeTotals();
+    }
+
+    function setAmountPercentage(pct) {
+      const avail = state.cashUsd;
+      const amt = Number((avail * pct).toFixed(2));
+      document.getElementById('tradeAmountInput').value = amt;
+      calculateTradeTotals();
+    }
+
+    function calculateTradeTotals() {
+      const coin = state.coins[state.activeCoin];
+      const amt = Math.max(0, parseFloat(document.getElementById('tradeAmountInput').value) || 0);
+      const fee = amt * TRADING_FEE_RATIO;
+      const total = amt + fee;
+
+      const estCoin = coin.price > 0 ? (amt / coin.price) : 0;
+      const takeProfitUsd = amt * MAX_PROFIT_RATIO;
+      const stopLossUsd = amt * MAX_LOSS_RATIO;
+
+      document.getElementById('breakdownCurrentPrice').textContent = formatCoinPrice(coin.price);
+      document.getElementById('breakdownEstReceive').textContent = `${estCoin.toFixed(coin.price < 5 ? 2 : 6)} ${coin.symbol}`;
+      document.getElementById('breakdownFee').textContent = formatUsd(fee);
+      document.getElementById('breakdownTotalCost').textContent = formatUsd(total);
+
+      document.getElementById('previewTakeProfit').textContent = `+${formatUsd(takeProfitUsd)}`;
+      document.getElementById('previewStopLoss').textContent = `-${formatUsd(stopLossUsd)}`;
+
+      document.getElementById('tradeAvailableCash').textContent = formatUsd(state.cashUsd);
+    }
+
+    function executeCurrentOrder() {
+      const coin = state.coins[state.activeCoin];
+      const amt = parseFloat(document.getElementById('tradeAmountInput').value) || 0;
+      if (amt <= 0) {
+        showToast('Invalid Amount', 'Please specify a trade amount greater than $0.', 'danger');
+        return;
+      }
+
+      const fee = amt * TRADING_FEE_RATIO;
+      const totalSettlement = amt + fee;
+
+      if (state.orderSide === 'BUY') {
+        if (totalSettlement > state.cashUsd) {
+          showToast('Insufficient Demo Balance', `You require ${formatUsd(totalSettlement)}, available: ${formatUsd(state.cashUsd)}`, 'danger');
+          return;
+        }
+
+        // Deduct Demo Cash & Credit Asset
+        state.cashUsd -= totalSettlement;
+        const qty = amt / coin.price;
+
+        if (state.orderType === 'STAKING') {
+          // Add to Staking Contracts
+          const select = document.getElementById('stakingDurationSelect');
+          const days = parseInt(select.value, 10);
+          const apy = parseFloat(select.options[select.selectedIndex].getAttribute('data-apy'));
+
+          const stakeContract = {
+            id: 'STK-' + Math.floor(1000 + Math.random() * 9000),
+            planName: `${coin.name} Yield Vault`,
+            coin: coin.symbol,
+            principalUsd: amt,
+            apy,
+            durationDays: days,
+            daysLeft: days,
+            earnedUsd: 0.00,
+            status: 'Active'
+          };
+          state.activeStaking.unshift(stakeContract);
+
+          state.tradeHistory.unshift({
+            id: stakeContract.id,
+            type: 'STAKE',
+            coin: coin.symbol,
+            price: coin.price,
+            qty: qty,
+            totalUsd: totalSettlement,
+            fee,
+            pnl: null,
+            time: new Date().toISOString().replace('T', ' ').slice(0, 16),
+            status: 'Staked',
+            txHash: '0x' + Math.random().toString(16).substring(2, 10) + '...f91a'
+          });
+
+          showToast('Staking Plan Activated', `Staked ${formatUsd(amt)} in ${days}-day plan at ${apy}% APY!`, 'success');
+        } else {
+          // Open Spot Active Trade Guarded Position
+          const maxProfitUsd = amt * MAX_PROFIT_RATIO;
+          const maxLossUsd = amt * MAX_LOSS_RATIO;
+
+          const trade = {
+            id: 'POS-' + Math.floor(1000 + Math.random() * 9000),
+            coin: coin.symbol,
+            coinName: coin.name,
+            investedUsd: amt,
+            feeUsd: fee,
+            qty,
+            entryPrice: coin.price,
+            maxProfitUsd,
+            maxLossUsd,
+            takeProfitPrice: coin.price * (1 + MAX_PROFIT_RATIO),
+            stopLossPrice: coin.price * (1 - MAX_LOSS_RATIO),
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+
+          state.activeTrades.unshift(trade);
+
+          state.tradeHistory.unshift({
+            id: trade.id,
+            type: 'BUY',
+            coin: coin.symbol,
+            price: coin.price,
+            qty: qty,
+            totalUsd: totalSettlement,
+            fee,
+            pnl: null,
+            time: new Date().toISOString().replace('T', ' ').slice(0, 16),
+            status: 'Filled',
+            txHash: '0x' + Math.random().toString(16).substring(2, 10) + '...3b21'
+          });
+
+          showToast('Order Executed', `Bought ${qty.toFixed(4)} ${coin.symbol} for ${formatUsd(amt)}. Protected by +5%/-10% cap.`, 'success');
+        }
+
+      } else {
+        // SELL FLOW
+        const proceeds = amt - fee;
+        state.cashUsd += proceeds;
+
+        state.tradeHistory.unshift({
+          id: 'SL-' + Math.floor(1000 + Math.random() * 9000),
+          type: 'SELL',
+          coin: coin.symbol,
+          price: coin.price,
+          qty: amt / coin.price,
+          totalUsd: proceeds,
+          fee,
+          pnl: +(proceeds * 0.02).toFixed(2),
+          time: new Date().toISOString().replace('T', ' ').slice(0, 16),
+          status: 'Sold',
+          txHash: '0x' + Math.random().toString(16).substring(2, 10) + '...8c10'
+        });
+
+        showToast('Sell Order Filled', `Sold ${coin.symbol} for net proceeds of ${formatUsd(proceeds)}.`, 'success');
+      }
+
+      updateLiveUI();
+      renderActiveTradesList();
+    }
+
+    // --- EVALUATE ACTIVE TRADE LIMITS (+5% / -10% AUTO-LIQUIDATION) ---
+    function evaluateTradeLimits() {
+      if (!state.activeTrades.length) return;
+
+      const remainingTrades = [];
+      state.activeTrades.forEach(trade => {
+        const coin = state.coins[trade.coin];
+        const rawPnl = (coin.price - trade.entryPrice) * trade.qty;
+
+        if (rawPnl >= trade.maxProfitUsd) {
+          // Take Profit Cap Triggered!
+          const payout = trade.investedUsd + trade.maxProfitUsd;
+          state.cashUsd += payout;
+          showToast(
+            `🎯 Take Profit Triggered (+5%)`,
+            `Auto-closed ${trade.coin} trade for max payout ${formatUsd(payout)} (Profit: +${formatUsd(trade.maxProfitUsd)})`,
+            'success'
+          );
+          state.tradeHistory.unshift({
+            id: trade.id + '-TP',
+            type: 'TAKE PROFIT',
+            coin: trade.coin,
+            price: coin.price,
+            qty: trade.qty,
+            totalUsd: payout,
+            fee: 0,
+            pnl: trade.maxProfitUsd,
+            time: new Date().toISOString().replace('T', ' ').slice(0, 16),
+            status: 'Closed (+5%)',
+            txHash: '0x' + Math.random().toString(16).substring(2, 10) + '...TP'
+          });
+        } else if (rawPnl <= -trade.maxLossUsd) {
+          // Stop Loss Cap Triggered!
+          const payout = trade.investedUsd - trade.maxLossUsd;
+          state.cashUsd += payout;
+          showToast(
+            `🛑 Stop Loss Enforced (-10%)`,
+            `Protected capital! Closed ${trade.coin} trade at capped loss -${formatUsd(trade.maxLossUsd)}. Returned: ${formatUsd(payout)}`,
+            'danger'
+          );
+          state.tradeHistory.unshift({
+            id: trade.id + '-SL',
+            type: 'STOP LOSS',
+            coin: trade.coin,
+            price: coin.price,
+            qty: trade.qty,
+            totalUsd: payout,
+            fee: 0,
+            pnl: -trade.maxLossUsd,
+            time: new Date().toISOString().replace('T', ' ').slice(0, 16),
+            status: 'Closed (-10%)',
+            txHash: '0x' + Math.random().toString(16).substring(2, 10) + '...SL'
+          });
+        } else {
+          remainingTrades.push(trade);
+        }
+      });
+
+      if (remainingTrades.length !== state.activeTrades.length) {
+        state.activeTrades = remainingTrades;
+        renderActiveTradesList();
+      } else {
+        renderActiveTradesLiveCounters();
+      }
+    }
+
+    function closeActiveTradeManual(id) {
+      const idx = state.activeTrades.findIndex(t => t.id === id);
+      if (idx === -1) return;
+      const trade = state.activeTrades[idx];
+      const coin = state.coins[trade.coin];
+      const rawPnl = (coin.price - trade.entryPrice) * trade.qty;
+      const cappedPnl = Math.max(-trade.maxLossUsd, Math.min(trade.maxProfitUsd, rawPnl));
+      const payout = trade.investedUsd + cappedPnl;
+
+      state.cashUsd += payout;
+      state.activeTrades.splice(idx, 1);
+
+      state.tradeHistory.unshift({
+        id: trade.id + '-M',
+        type: 'CLOSED',
+        coin: trade.coin,
+        price: coin.price,
+        qty: trade.qty,
+        totalUsd: payout,
+        fee: 0,
+        pnl: cappedPnl,
+        time: new Date().toISOString().replace('T', ' ').slice(0, 16),
+        status: 'Manual Close',
+        txHash: '0x' + Math.random().toString(16).substring(2, 10) + '...MC'
+      });
+
+      showToast('Position Closed', `Realized P&L: ${cappedPnl >= 0 ? '+' : ''}${formatUsd(cappedPnl)}. Capital returned.`, cappedPnl >= 0 ? 'success' : 'danger');
+      updateLiveUI();
+      renderActiveTradesList();
+    }
+
+    function renderActiveTradesList() {
+      const box = document.getElementById('activeTradesList');
+      const countBadge = document.getElementById('activeTradesCount');
+      if (!box) return;
+
+      countBadge.textContent = state.activeTrades.length;
+
+      if (!state.activeTrades.length) {
+        box.innerHTML = `
+          <div class="text-center py-6 text-slate-400 text-xs">
+            <i class="fa-solid fa-chart-line text-2xl text-slate-600 mb-2 block"></i>
+            No active trade positions open. Place a Buy order to start live P&L tracking!
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      state.activeTrades.forEach(t => {
+        const coin = state.coins[t.coin];
+        const rawPnl = (coin.price - t.entryPrice) * t.qty;
+        const cappedPnl = Math.max(-t.maxLossUsd, Math.min(t.maxProfitUsd, rawPnl));
+        const pct = (cappedPnl / t.investedUsd) * 100;
+        const isProf = cappedPnl >= 0;
+
+        html += `
+          <div class="p-3 rounded-xl bg-[#090d16] border border-slate-800 space-y-2 text-xs font-mono">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-lg bg-amber-500/15 border border-brand-gold/40 text-brand-gold font-bold flex items-center justify-center text-xs font-sans">
+                  ${coin.badge}
+                </span>
+                <div>
+                  <span class="font-bold text-slate-100 font-sans">${t.coinName} Position</span>
+                  <span class="text-[10px] text-slate-500 block">ID: ${t.id} • Entry: ${formatCoinPrice(t.entryPrice)}</span>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="text-sm font-extrabold ${isProf ? 'text-emerald-400' : 'text-rose-400'} block">
+                  ${isProf ? '+' : ''}${formatUsd(cappedPnl)} (${isProf ? '+' : ''}${pct.toFixed(2)}%)
+                </span>
+                <span class="text-[10px] text-slate-400 font-sans">Cap: +5% / -10%</span>
+              </div>
+            </div>
+
+            <!-- Progress toward +5% profit or -10% loss -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-[10px] text-slate-400 font-sans">
+                <span>Stop Loss (-$${t.maxLossUsd.toFixed(2)})</span>
+                <span>Current P&L</span>
+                <span>Take Profit (+$${t.maxProfitUsd.toFixed(2)})</span>
+              </div>
+              <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden flex">
+                <div class="h-full ${isProf ? 'bg-emerald-500' : 'bg-rose-500'} rounded-full transition-all duration-300" style="width: ${Math.min(100, Math.max(10, ((cappedPnl + t.maxLossUsd) / (t.maxProfitUsd + t.maxLossUsd)) * 100))}%"></div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-1 border-t border-slate-800/80 font-sans">
+              <span class="text-[11px] text-slate-400">Position Size: <strong class="text-slate-200">${formatUsd(t.investedUsd)}</strong></span>
+              <button onclick="closeActiveTradeManual('${t.id}')" class="px-2.5 py-1 rounded bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/40 font-bold text-[10px] transition">
+                Close Position
+              </button>
+            </div>
+          </div>
+        `;
+      });
+      box.innerHTML = html;
+    }
+
+    function renderActiveTradesLiveCounters() {
+      // Light update of prices without rebuilding entire DOM
+      if (!state.activeTrades.length) return;
+      renderActiveTradesList();
+    }
+
+    // --- CHECK CUSTOM PRICE ALERTS ---
+    function checkAlertTriggers() {
+      state.alerts.forEach(a => {
+        if (!a.enabled || a.triggered) return;
+        const coin = state.coins[a.coin];
+        if (!coin) return;
+
+        let triggered = false;
+        if (a.condition === 'ABOVE' && coin.price >= a.target) triggered = true;
+        if (a.condition === 'BELOW' && coin.price <= a.target) triggered = true;
+
+        if (triggered) {
+          a.triggered = true;
+          showToast(
+            `🔔 Price Alert Triggered (${a.coin})`,
+            `${coin.name} hit target of ${formatCoinPrice(a.target)}! (${a.note})`,
+            'info'
+          );
+          state.notifications.unshift({
+            id: Date.now(),
+            title: `Price Alert: ${a.coin}`,
+            body: `${coin.name} hit your ${a.condition.toLowerCase()} trigger at ${formatCoinPrice(coin.price)}!`,
+            time: 'Just now',
+            type: 'info'
+          });
+          updateNotificationBadge();
+        }
+      });
+    }
+
+    // --- RELATED PAGE 2: MARKETS TABLE VIEW ---
+    let currentMarketCat = 'ALL';
+    function setMarketCategory(cat, btnEl) {
+      currentMarketCat = cat;
+      document.querySelectorAll('.market-cat-chip').forEach(b => {
+        b.className = 'market-cat-chip px-3 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white';
+      });
+      if (btnEl) btnEl.className = 'market-cat-chip px-3 py-1 rounded-full font-bold bg-brand-gold text-brand-dark';
+      renderMarketsTable();
+    }
+
+    function filterMarketsTable() {
+      renderMarketsTable();
+    }
+
+    function renderMarketsTable() {
+      const tbody = document.getElementById('marketsTableBody');
+      const search = (document.getElementById('marketSearchInput')?.value || '').toLowerCase();
+      if (!tbody) return;
+
+      let coinsList = Object.values(state.coins).filter(c => {
+        const matchesSearch = c.name.toLowerCase().includes(search) || c.symbol.toLowerCase().includes(search);
+        if (!matchesSearch) return false;
+        if (currentMarketCat === 'ALL') return true;
+        if (currentMarketCat === 'L1') return c.category === 'L1';
+        if (currentMarketCat === 'GAINERS') return c.change24h > 1.0;
+        return true;
+      });
+
+      let html = '';
+      coinsList.forEach(c => {
+        const isPos = c.change24h >= 0;
+        html += `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-3 pl-2 flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-amber-500/15 border border-brand-gold/40 text-brand-gold font-bold flex items-center justify-center text-xs font-sans">
+                ${c.badge}
+              </span>
+              <div>
+                <span class="font-bold text-white font-sans">${c.name}</span>
+                <span class="text-[10px] text-slate-400 block">${c.symbol}</span>
+              </div>
+            </td>
+            <td class="py-3 font-bold text-slate-100">${formatCoinPrice(c.price)}</td>
+            <td class="py-3">
+              <span class="px-2 py-0.5 rounded text-[11px] font-bold ${isPos ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'}">
+                ${isPos ? '+' : ''}${c.change24h.toFixed(2)}%
+              </span>
+            </td>
+            <td class="py-3 hidden sm:table-cell text-slate-300">
+              ${formatCoinPrice(c.high)} / ${formatCoinPrice(c.low)}
+            </td>
+            <td class="py-3 hidden md:table-cell text-slate-300">$${c.vol}</td>
+            <td class="py-3 hidden lg:table-cell text-slate-400">$${c.marketCap}</td>
+            <td class="py-3 text-right pr-2">
+              <button onclick="selectActiveCoin('${c.symbol}'); switchMainTab('trade')" class="px-3 py-1 rounded-lg bg-brand-gold/15 hover:bg-brand-gold text-brand-gold hover:text-brand-dark font-bold font-sans text-xs border border-brand-gold/30 transition">
+                Trade
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    // --- RELATED PAGE 3: PORTFOLIO & ASSETS VIEW ---
+    function renderPortfolioView() {
+      const btc = state.coins['BTC'];
+      const eth = state.coins['ETH'];
+      const sol = state.coins['SOL'];
+
+      const btcVal = state.portfolio.BTC.amount * btc.price;
+      const ethVal = state.portfolio.ETH.amount * eth.price;
+      const solVal = state.portfolio.SOL.amount * sol.price;
+      const cryptoTotal = btcVal + ethVal + solVal;
+      const netWorth = state.cashUsd + cryptoTotal;
+
+      document.getElementById('portTotalNetWorth').textContent = formatUsd(netWorth);
+      document.getElementById('portAvailableCash').textContent = formatUsd(state.cashUsd);
+      document.getElementById('portCryptoAllocationVal').textContent = formatUsd(cryptoTotal);
+
+      const tbody = document.getElementById('portHoldingsTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `
+        <tr class="hover:bg-slate-800/40">
+          <td class="py-3 pl-2 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-lg bg-amber-500 text-white font-bold flex items-center justify-center text-xs font-sans">₿</span>
+            <span class="font-bold text-white font-sans">Bitcoin</span>
+          </td>
+          <td class="py-3">${state.portfolio.BTC.amount} BTC</td>
+          <td class="py-3">${formatCoinPrice(btc.price)}</td>
+          <td class="py-3 font-bold text-slate-100">${formatUsd(btcVal)}</td>
+          <td class="py-3 text-emerald-400 font-bold">+$502.18 (+10.3%)</td>
+          <td class="py-3 text-right pr-2">
+            <button onclick="selectActiveCoin('BTC'); switchMainTab('trade')" class="px-2.5 py-1 rounded bg-brand-gold text-brand-dark font-bold font-sans">Trade</button>
+          </td>
+        </tr>
+        <tr class="hover:bg-slate-800/40">
+          <td class="py-3 pl-2 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-lg bg-indigo-500 text-white font-bold flex items-center justify-center text-xs font-sans">Ξ</span>
+            <span class="font-bold text-white font-sans">Ethereum</span>
+          </td>
+          <td class="py-3">${state.portfolio.ETH.amount} ETH</td>
+          <td class="py-3">${formatCoinPrice(eth.price)}</td>
+          <td class="py-3 font-bold text-slate-100">${formatUsd(ethVal)}</td>
+          <td class="py-3 text-emerald-400 font-bold">+$35.20 (+5.4%)</td>
+          <td class="py-3 text-right pr-2">
+            <button onclick="selectActiveCoin('ETH'); switchMainTab('trade')" class="px-2.5 py-1 rounded bg-brand-gold text-brand-dark font-bold font-sans">Trade</button>
+          </td>
+        </tr>
+        <tr class="hover:bg-slate-800/40">
+          <td class="py-3 pl-2 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-lg bg-teal-400 text-brand-dark font-bold flex items-center justify-center text-xs font-sans">≡</span>
+            <span class="font-bold text-white font-sans">Solana</span>
+          </td>
+          <td class="py-3">${state.portfolio.SOL.amount} SOL</td>
+          <td class="py-3">${formatCoinPrice(sol.price)}</td>
+          <td class="py-3 font-bold text-slate-100">${formatUsd(solVal)}</td>
+          <td class="py-3 text-emerald-400 font-bold">+$24.80 (+8.5%)</td>
+          <td class="py-3 text-right pr-2">
+            <button onclick="selectActiveCoin('SOL'); switchMainTab('trade')" class="px-2.5 py-1 rounded bg-brand-gold text-brand-dark font-bold font-sans">Trade</button>
+          </td>
+        </tr>
+      `;
+    }
+
+    // --- RELATED PAGE 4: EARN & STAKING PLANS VIEW ---
+    const STAKING_PLANS = [
+      { name: 'Bitcoin Safe Wealth', symbol: 'BTC', badge: '₿', apy: 6.5, duration: 30, risk: 'Capital Protected', min: 100, color: 'border-brand-gold' },
+      { name: 'Ethereum PoS Yield', symbol: 'ETH', badge: 'Ξ', apy: 7.8, duration: 60, risk: 'Low Risk', min: 250, color: 'border-indigo-500' },
+      { name: 'USDT Stable Income', symbol: 'USDT', badge: '$', apy: 12.0, duration: 15, risk: 'Guaranteed', min: 50, color: 'border-emerald-500' },
+      { name: 'AI Ecosystem Growth', symbol: 'SOL', badge: '≡', apy: 18.5, duration: 90, risk: 'High Growth', min: 500, color: 'border-teal-400' }
+    ];
+
+    function renderEarnView() {
+      const grid = document.getElementById('stakingPlansGrid');
+      if (!grid) return;
+
+      grid.innerHTML = STAKING_PLANS.map(p => `
+        <div class="crypto-card p-4 flex flex-col justify-between border ${p.color}/50 hover:border-brand-gold transition space-y-3">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center text-white font-bold text-sm">${p.badge}</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-bold">${p.risk}</span>
+            </div>
+            <h4 class="font-bold text-white text-sm mt-2">${p.name}</h4>
+            <div class="mt-2 text-2xl font-extrabold text-brand-gold font-mono">+${p.apy}% <span class="text-xs text-slate-400 font-sans font-semibold">APY</span></div>
+            <p class="text-xs text-slate-400 mt-1">${p.duration} Days Lock • Min ${formatUsd(p.min)}</p>
+          </div>
+
+          <button onclick="quickStakePlan('${p.symbol}', ${p.apy}, ${p.duration})" class="w-full py-2 rounded-xl bg-brand-gold hover:bg-brand-goldHover text-brand-dark font-bold text-xs transition">
+            Stake Asset Now
+          </button>
+        </div>
+      `).join('');
+
+      renderActiveStakingContracts();
+    }
+
+    function renderActiveStakingContracts() {
+      const box = document.getElementById('activeStakingList');
+      const count = document.getElementById('activeStakingCount');
+      if (!box) return;
+
+      count.textContent = state.activeStaking.length;
+      if (!state.activeStaking.length) {
+        box.innerHTML = '<p class="text-center py-4 text-slate-500">No active staking contracts. Stake any plan above to earn yields!</p>';
+        return;
+      }
+
+      box.innerHTML = state.activeStaking.map(s => `
+        <div class="p-3 rounded-xl bg-[#090d16] border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 font-mono">
+          <div>
+            <span class="font-bold text-white font-sans text-sm">${s.planName} (${s.coin})</span>
+            <span class="text-xs text-slate-400 block font-sans">Principal: <strong class="text-slate-200">${formatUsd(s.principalUsd)}</strong> • APY: <strong class="text-emerald-400">+${s.apy}%</strong></span>
+          </div>
+          <div class="text-right">
+            <span class="text-emerald-400 font-bold block">+${formatUsd(s.earnedUsd)} Accrued</span>
+            <span class="text-[10px] text-slate-500 font-sans">${s.daysLeft} Days remaining</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function quickStakePlan(symbol, apy, days) {
+      selectActiveCoin(symbol);
+      setOrderType('STAKING');
+      switchMainTab('trade');
+      showToast('Staking Selected', `Configured trade terminal for ${days}-Day plan at ${apy}% APY.`, 'info');
+    }
+
+    // --- RELATED PAGE 5: ORDERS & HISTORY VIEW ---
+    let currentOrderFilter = 'ALL';
+    function filterOrderHistory(type, btnEl) {
+      currentOrderFilter = type;
+      document.querySelectorAll('.order-hist-filter').forEach(b => {
+        b.className = 'order-hist-filter px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 hover:text-white';
+      });
+      if (btnEl) btnEl.className = 'order-hist-filter px-2.5 py-1 rounded-md font-bold bg-brand-gold text-brand-dark';
+      renderOrdersView();
+    }
+
+    function renderOrdersView() {
+      const tbody = document.getElementById('orderHistoryTableBody');
+      if (!tbody) return;
+
+      const filtered = state.tradeHistory.filter(h => {
+        if (currentOrderFilter === 'ALL') return true;
+        if (currentOrderFilter === 'BUY') return h.type === 'BUY';
+        if (currentOrderFilter === 'SELL') return h.type === 'SELL';
+        if (currentOrderFilter === 'STAKE') return h.type === 'STAKE';
+        return true;
+      });
+
+      tbody.innerHTML = filtered.map(item => `
+        <tr class="hover:bg-slate-800/40">
+          <td class="py-2.5 pl-2 font-bold text-slate-300">${item.id}</td>
+          <td class="py-2.5 font-bold ${item.type.includes('BUY') ? 'text-emerald-400' : item.type.includes('SELL') ? 'text-rose-400' : 'text-brand-gold'}">
+            ${item.type}
+          </td>
+          <td class="py-2.5 text-slate-200">${item.coin}</td>
+          <td class="py-2.5">${formatCoinPrice(item.price)}</td>
+          <td class="py-2.5">${item.qty.toFixed(4)}</td>
+          <td class="py-2.5 font-bold text-white">${formatUsd(item.totalUsd)}</td>
+          <td class="py-2.5 ${item.pnl && item.pnl > 0 ? 'text-emerald-400' : item.pnl && item.pnl < 0 ? 'text-rose-400' : 'text-slate-500'}">
+            ${item.pnl ? (item.pnl > 0 ? '+' : '') + formatUsd(item.pnl) : '--'}
+          </td>
+          <td class="py-2.5 text-[10px] text-slate-400">${item.time}</td>
+          <td class="py-2.5 text-right pr-2">
+            <button onclick="openReceiptModal('${item.id}')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-brand-gold font-sans font-semibold text-[11px] border border-slate-700">
+              Receipt
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openReceiptModal(orderId) {
+      const item = state.tradeHistory.find(h => h.id === orderId) || state.tradeHistory[0];
+      const card = document.getElementById('receiptCardContent');
+      card.innerHTML = `
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-receipt text-brand-gold"></i> Transaction Receipt
+          </h3>
+          <button onclick="closeModal('receiptModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="text-center py-2">
+          <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto text-xl mb-1">
+            <i class="fa-solid fa-check"></i>
+          </div>
+          <h4 class="text-base font-extrabold text-white">${formatUsd(item.totalUsd)}</h4>
+          <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-bold font-mono">STATUS: ${item.status || 'SETTLED'}</span>
+        </div>
+
+        <div class="space-y-2 text-xs bg-[#090d16] p-3 rounded-xl border border-slate-800 font-mono">
+          <div class="flex justify-between"><span class="text-slate-400 font-sans">Order ID:</span><strong>${item.id}</strong></div>
+          <div class="flex justify-between"><span class="text-slate-400 font-sans">Order Side:</span><strong class="text-brand-gold">${item.type}</strong></div>
+          <div class="flex justify-between"><span class="text-slate-400 font-sans">Execution Price:</span><strong>${formatCoinPrice(item.price)}</strong></div>
+          <div class="flex justify-between"><span class="text-slate-400 font-sans">Amount:</span><strong>${item.qty.toFixed(4)} ${item.coin}</strong></div>
+          <div class="flex justify-between"><span class="text-slate-400 font-sans">Trading Fee:</span><strong>${formatUsd(item.fee || 0.10)}</strong></div>
+          <div class="flex justify-between"><span class="text-slate-400 font-sans">Hash:</span><strong class="text-slate-400 truncate max-w-[140px]">${item.txHash || '0x4f8a9...92e1'}</strong></div>
+          <div class="flex justify-between"><span class="text-slate-400 font-sans">Time:</span><strong class="text-slate-400">${item.time}</strong></div>
+        </div>
+
+        <button onclick="closeModal('receiptModal')" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs">
+          Dismiss Receipt
+        </button>
+      `;
+      openModal('receiptModal');
+    }
+
+    // --- RELATED PAGE 6: ALERTS & SIGNALS VIEW ---
+    function renderAlertsView() {
+      const list = document.getElementById('alertsFullList');
+      if (!list) return;
+
+      list.innerHTML = state.alerts.map(a => `
+        <div class="p-3 rounded-xl bg-[#090d16] border border-slate-800 flex items-center justify-between text-xs font-mono">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-amber-500/15 border border-brand-gold/40 text-brand-gold flex items-center justify-center font-bold text-xs font-sans">
+              ${a.coin}
+            </div>
+            <div>
+              <p class="font-bold text-slate-100 font-sans">${a.note}</p>
+              <p class="text-[10px] text-slate-400">Trigger when &nbsp;${a.condition === 'ABOVE' ? '≥' : '≤'}&nbsp; <strong class="text-brand-gold">${formatCoinPrice(a.target)}</strong></p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${a.triggered ? 'bg-slate-800 text-slate-500' : 'bg-emerald-500/15 text-emerald-400'}">
+              ${a.triggered ? 'TRIGGERED' : 'ARMED'}
+            </span>
+            <button onclick="deletePriceAlert(${a.id})" class="text-slate-500 hover:text-rose-400 transition"><i class="fa-solid fa-trash text-xs"></i></button>
+          </div>
+        </div>
+      `).join('');
+
+      // Populate Live Signals Feed
+      const signalsBox = document.getElementById('signalsFeedList');
+      if (signalsBox) {
+        signalsBox.innerHTML = `
+          <div class="p-2.5 rounded-lg bg-[#090d16] border border-slate-800 space-y-1">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-emerald-400"><i class="fa-solid fa-bolt mr-1"></i>BTC Bullish RSI Divergence</span>
+              <span class="text-[10px] text-slate-500">5m ago</span>
+            </div>
+            <p class="text-slate-300 text-[11px]">4-Hour relative strength index indicates strong accumulation phase above $91,500 support.</p>
+          </div>
+          <div class="p-2.5 rounded-lg bg-[#090d16] border border-slate-800 space-y-1">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-brand-gold"><i class="fa-solid fa-chart-line mr-1"></i>ETH Triangle Breakout</span>
+              <span class="text-[10px] text-slate-500">18m ago</span>
+            </div>
+            <p class="text-slate-300 text-[11px]">Ethereum consolidates around $3,140. Watch resistance zone at $3,200.</p>
+          </div>
+          <div class="p-2.5 rounded-lg bg-[#090d16] border border-slate-800 space-y-1">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-teal-400"><i class="fa-solid fa-arrow-trend-up mr-1"></i>SOL Volume Spike (+24%)</span>
+              <span class="text-[10px] text-slate-500">42m ago</span>
+            </div>
+            <p class="text-slate-300 text-[11px]">Decentralized exchange volumes across Solana ecosystem up significantly.</p>
+          </div>
+        `;
+      }
+    }
+
+    function createNewPriceAlert() {
+      const asset = document.getElementById('alertAssetSelect').value;
+      const cond = document.getElementById('alertConditionSelect').value;
+      const target = parseFloat(document.getElementById('alertTargetPriceInput').value) || 95000;
+      const note = document.getElementById('alertNoteInput').value || 'Price Target Alert';
+
+      state.alerts.unshift({
+        id: Date.now(),
+        coin: asset,
+        condition: cond,
+        target,
+        note,
+        triggered: false,
+        enabled: true
+      });
+
+      closeModal('alertSettingModal');
+      showToast('Alert Saved', `We will notify you when ${asset} hits ${formatCoinPrice(target)}.`, 'success');
+      renderAlertsView();
+      updateNotificationBadge();
+    }
+
+    function deletePriceAlert(id) {
+      state.alerts = state.alerts.filter(a => a.id !== id);
+      renderAlertsView();
+      updateNotificationBadge();
+      showToast('Alert Removed', 'Trigger cancelled successfully.', 'info');
+    }
+
+    function updateNotificationBadge() {
+      const activeCount = state.alerts.filter(a => !a.triggered).length;
+      const badgeDesk = document.getElementById('navAlertBadgeDesk');
+      const badgeMob = document.getElementById('navAlertBadgeMob');
+      const headerBell = document.getElementById('headerBellCount');
+
+      if (badgeDesk) badgeDesk.textContent = activeCount;
+      if (badgeMob) badgeMob.textContent = activeCount;
+      if (headerBell) headerBell.textContent = activeCount;
+    }
+
+    // --- DEPOSIT / WITHDRAWAL FLOWS ---
+    function setDepositMethod(method, btnEl) {
+      document.querySelectorAll('.dep-tab-btn').forEach(b => {
+        b.className = 'dep-tab-btn py-1.5 rounded-lg text-slate-400 hover:text-white';
+      });
+      if (btnEl) btnEl.className = 'dep-tab-btn py-1.5 rounded-lg bg-brand-gold text-brand-dark font-bold';
+
+      const cryptoTab = document.getElementById('depCryptoTab');
+      const otherTab = document.getElementById('depOtherTab');
+
+      if (method === 'CRYPTO') {
+        cryptoTab.classList.remove('hidden');
+        otherTab.classList.add('hidden');
+      } else {
+        cryptoTab.classList.add('hidden');
+        otherTab.classList.remove('hidden');
+      }
+    }
+
+    function copyDepositAddress() {
+      navigator.clipboard.writeText('bc1q4r8zk3mp92vpt75q8x0y72s2z0j4h7kd6w932m');
+      showToast('Address Copied', 'Bitcoin deposit address copied to clipboard.', 'success');
+    }
+
+    function injectDemoCash(amount) {
+      state.cashUsd += amount;
+      showToast('Deposit Added', `Credited +${formatUsd(amount)} Demo Cash to your account.`, 'success');
+      closeModal('depositModal');
+      updateLiveUI();
+    }
+
+    function executeMockFiatDeposit() {
+      const val = parseFloat(document.getElementById('fiatDepositAmount').value) || 500;
+      injectDemoCash(val);
+    }
+
+    function executeMockWithdrawal() {
+      const amt = parseFloat(document.getElementById('withdrawAmountInput').value) || 0;
+      if (amt <= 0 || amt > state.cashUsd) {
+        showToast('Invalid Amount', 'Specify an amount up to your available demo cash.', 'danger');
+        return;
+      }
+      state.cashUsd -= amt;
+      closeModal('withdrawModal');
+      showToast('Withdrawal Processed', `Dispatched ${formatUsd(amt)} to specified crypto address.`, 'success');
+      updateLiveUI();
+    }
+
+    // --- MODAL CONTROLS ---
+    function openModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('hidden');
+
+      if (id === 'walletModal') {
+        const cashEl = document.getElementById('walletModalCash');
+        if (cashEl) cashEl.textContent = formatUsd(state.cashUsd);
+      } else if (id === 'profileModal') {
+        document.getElementById('modalCashVal').textContent = formatUsd(state.cashUsd);
+      } else if (id === 'withdrawModal') {
+        document.getElementById('withdrawAvailableCash').textContent = formatUsd(state.cashUsd);
+      } else if (id === 'notificationsModal') {
+        renderNotificationsModalList();
+      }
+    }
+
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    }
+
+    function renderNotificationsModalList() {
+      const box = document.getElementById('notificationsList');
+      if (!box) return;
+      box.innerHTML = state.notifications.map(n => `
+        <div class="p-2.5 rounded-lg bg-[#090d16] border border-slate-800 space-y-0.5 text-xs">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-white">${n.title}</span>
+            <span class="text-[10px] text-slate-500">${n.time}</span>
+          </div>
+          <p class="text-slate-400 text-[11px]">${n.body}</p>
+        </div>
+      `).join('');
+    }
+
+    // --- OVERALL UI LIVE REFRESH LOOP ---
+    function updateLiveUI() {
+      const coin = state.coins[state.activeCoin];
+
+      // Top Toolbar
+      document.getElementById('topBarDemoCash').textContent = formatUsd(state.cashUsd);
+
+      // Card 1: Selected Coin Header
+      document.getElementById('cardActiveCoinPrice').textContent = formatCoinPrice(coin.price);
+      const isPos = coin.change24h >= 0;
+      document.getElementById('cardActiveCoinChange').className = `px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1 ${
+        isPos ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400' : 'bg-rose-500/15 border border-rose-500/30 text-rose-400'
+      }`;
+      document.getElementById('cardActiveCoinChange').innerHTML = `<i class="fa-solid fa-caret-${isPos ? 'up' : 'down'}"></i> ${isPos ? '+' : ''}${coin.change24h.toFixed(2)}%`;
+      document.getElementById('cardActiveCoinDollarChange').textContent = `${isPos ? '+' : ''}${formatUsd(coin.changeDollar)} (24h)`;
+
+      document.getElementById('stat24hHigh').textContent = formatCoinPrice(coin.high);
+      document.getElementById('stat24hLow').textContent = formatCoinPrice(coin.low);
+      document.getElementById('stat24hVol').textContent = '$' + coin.vol;
+
+      // Card 2: Portfolio Total
+      const btcVal = state.portfolio.BTC.amount * state.coins['BTC'].price;
+      const totalNet = state.cashUsd + btcVal;
+      document.getElementById('cardPortfolioValue').textContent = formatUsd(totalNet);
+      document.getElementById('cardCashBal').textContent = formatUsd(state.cashUsd);
+
+      // Top Ticker Marquee Bar
+      renderTopTicker();
+      renderOrderBook();
+      calculateTradeTotals();
+    }
+
+    function renderTopTicker() {
+      const bar = document.getElementById('topTickerRow');
+      if (!bar) return;
+
+      bar.innerHTML = Object.values(state.coins).map(c => {
+        const isPos = c.change24h >= 0;
+        const isSel = c.symbol === state.activeCoin;
+        return `
+          <div onclick="selectActiveCoin('${c.symbol}')" class="flex items-center gap-2 cursor-pointer px-2 py-0.5 rounded hover:bg-slate-800/50 transition shrink-0 ${isSel ? 'border-b border-brand-gold' : ''}">
+            <span class="font-bold text-slate-200">${c.symbol}</span>
+            <span class="font-mono text-slate-100">${formatCoinPrice(c.price)}</span>
+            <span class="text-[10px] font-bold ${isPos ? 'text-emerald-400' : 'text-rose-400'}">${isPos ? '+' : ''}${c.change24h.toFixed(1)}%</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function resetDemoState() {
+      state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+      showToast('Demo Reset', 'Default balances and market parameters restored.', 'info');
+      selectActiveCoin('BTC');
+      updateLiveUI();
+      renderActiveTradesList();
+      renderOrdersView();
+      renderAlertsView();
+    }
+
+    // --- INITIALIZATION ON DOM READY ---
+    window.addEventListener('DOMContentLoaded', () => {
+      // Real clock in mobile notch
+      setInterval(() => {
+        const now = new Date();
+        const clk = document.getElementById('mobileClock');
+        if (clk) clk.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }, 1000);
+
+      // Initialize chart & feeds
+      initChart();
+      connectBinanceFeed();
+      renderCoinSelectorGrid();
+      renderOrderBook();
+      renderActiveTradesList();
+      updateLiveUI();
+      updateNotificationBadge();
+    });
+  </script>
+</body>
+</html>
